@@ -1,0 +1,2 @@
+- [ ] make it platform generic
+- [ ] use https://github.com/franciscop/polystore
