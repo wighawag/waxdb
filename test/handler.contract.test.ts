@@ -21,7 +21,7 @@ function createHarness(options: { adminToken?: string }): ContractHarness {
 		adminToken: options.adminToken,
 		kv,
 		async raw(init) {
-			const request = new Request('http://localhost/', {
+			const request = new Request(`http://localhost${init.path ?? '/'}`, {
 				method: init.method,
 				body: init.body,
 				headers: init.headers,

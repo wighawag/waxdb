@@ -31,7 +31,7 @@ const harness: ContractHarness = {
 	name: 'worker',
 	adminToken: ADMIN_TOKEN,
 	async raw(init) {
-		return (await worker.fetch('http://example.com/', {
+		return (await worker.fetch(`http://example.com${init.path ?? '/'}`, {
 			method: init.method,
 			body: init.body,
 			headers: init.headers,

@@ -32,7 +32,7 @@ if (!LIVE_URL) {
 		// drop) once a build that has the method is deployed.
 		resetImplemented: RESET_IMPLEMENTED,
 		async raw(init) {
-			return fetch(LIVE_URL, {
+			return fetch(new URL(init.path ?? '/', LIVE_URL), {
 				method: init.method,
 				body: init.body,
 				headers: init.headers,

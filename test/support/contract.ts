@@ -27,6 +27,8 @@ export type ContractHarness = {
 		method: string;
 		body?: string;
 		headers?: Record<string, string>;
+		/** path + query, defaults to '/' */
+		path?: string;
 	}): Promise<Response>;
 	/** the TOKEN_ADMIN value configured on this instance (undefined = unset) */
 	adminToken?: string;
@@ -53,18 +55,24 @@ export function runContractTests(harness: ContractHarness) {
 	/** storage-level tests only run on harnesses that expose the underlying KV */
 	const itKV = harness.kv ? it : it.skip;
 
-	const post = (body: unknown, headers?: Record<string, string>) =>
+	const post = (
+		body: unknown,
+		headers?: Record<string, string>,
+		path?: string
+	) =>
 		harness.raw({
 			method: 'POST',
 			body: typeof body === 'string' ? body : JSON.stringify(body),
 			headers,
+			path,
 		});
 
 	const postJSON = async (
 		body: unknown,
-		headers?: Record<string, string>
+		headers?: Record<string, string>,
+		path?: string
 	): Promise<{ response: Response; body: RpcBody }> => {
-		const response = await post(body, headers);
+		const response = await post(body, headers, path);
 		const text = await response.text();
 		let parsed: RpcBody;
 		try {
@@ -175,6 +183,51 @@ export function runContractTests(harness: ContractHarness) {
 			expect(response.status).toBe(200);
 			expect(response.headers.get('allow')).toBe('GET, HEAD, POST, OPTIONS');
 			expect(response.headers.get('access-control-allow-origin')).toBe(null);
+		});
+
+		it('serves the RPC on any path, not just /', async () => {
+			// the handler never looks at the URL; live clients rely on this
+			const wallet = Wallet.createRandom();
+			const namespace = uniqueNamespace();
+			for (const path of ['/', '/some/deep/path', '/?query=1', '/rpc']) {
+				const { body } = await postJSON(
+					getRequest(wallet.address, namespace),
+					undefined,
+					path
+				);
+				expect(body.result).toEqual({
+					data: '',
+					counter: '0',
+					signature: '',
+				});
+			}
+		});
+
+		it('serves a full put/get round-trip on a subpath', async () => {
+			const wallet = Wallet.createRandom();
+			const namespace = uniqueNamespace();
+			const counter = (Date.now() - 1000).toString();
+			const put = await postJSON(
+				await putRequest(wallet, { namespace, counter, data: 'subpath' }),
+				undefined,
+				'/some/deep/path'
+			);
+			expect(put.body.result.success).toBe(true);
+			const read = await postJSON(
+				getRequest(wallet.address, namespace),
+				undefined,
+				'/other/path'
+			);
+			expect(read.body.result.data).toBe('subpath');
+		});
+
+		it('returns the usage hint for a GET on any path', async () => {
+			const response = await harness.raw({
+				method: 'GET',
+				path: '/deep/path',
+			});
+			expect(response.status).toBe(200);
+			expect(await response.text()).toBe('please use jsonrpc POST request');
 		});
 
 		it('HEAD returns 200 with an empty body', async () => {
