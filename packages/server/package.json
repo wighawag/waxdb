@@ -34,6 +34,7 @@
     "dev": "as-soon -w src pnpm build",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:live": "vitest run test/live.conformance.test.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   }
