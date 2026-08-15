@@ -1,6 +1,6 @@
 {
   "name": "secp256k1-db",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "run secp256k1-db locally, offline: an authenticated key-value store for ethereum addresses",
   "license": "AGPL-3.0-only",
   "publishConfig": {

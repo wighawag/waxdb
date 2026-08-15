@@ -34,8 +34,12 @@ exactly the job `platforms/nodejs` now does, better.
 Two things to settle before publishing:
 
 - the meaning of the package changes from "worker source" to "CLI", so it
-  should go out as `1.0.0`, not `0.0.2`. `^0.0.1` does not resolve to
-  `0.0.2` anyway, so nothing auto-upgrades either way.
+  goes out as `0.1.0`. Nothing auto-upgrades: `^0.0.1` expands to
+  `>=0.0.1 <0.0.2-0`, so the pinned repos stay on the old source drop until
+  they are moved over deliberately.
+- `secp256k1-db` depends on `secp256k1-db-server` via `workspace:*`, which
+  pnpm rewrites to a real version at publish time. So the server package
+  has to be published first, or `npm i secp256k1-db` cannot resolve.
 - those helper-services pin KV namespace `6a9b71a2…`, which was deleted as
   unused. Local `wrangler dev` is unaffected (miniflare treats the id as a
   local label), but `--remote` or a deploy from those directories now fails.
