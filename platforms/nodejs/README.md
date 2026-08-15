@@ -6,6 +6,7 @@ Runs secp256k1-db as a local Node process, so a project can develop against it o
 npx secp256k1-db                                  # in memory, port 2000
 npx secp256k1-db --port 3000 --db ./data.json     # persisted to a JSON file
 npx secp256k1-db --token-admin <token>            # enables the reset method
+npx secp256k1-db --db ./data.json --clear         # start from an empty store
 ```
 
 | option | default | meaning |
@@ -13,6 +14,9 @@ npx secp256k1-db --token-admin <token>            # enables the reset method
 | `-p, --port` | `2000` | port to listen on |
 | `-d, --db` | `:memory:` | `:memory:`, or a path to a JSON file to persist to |
 | `-t, --token-admin` | unset | value the `TOKEN` header must match for `reset` (also read from `TOKEN_ADMIN`) |
+| `-c, --clear` | off | empty the store before listening |
+
+`--clear` deletes **every** record, which is not what the `reset` RPC method does (one record, and only with the admin token). It is a no-op with the default `:memory:` store, which starts empty anyway.
 
 It answers exactly what the deployed service answers: the same contract suite runs against both.
 

@@ -22,10 +22,19 @@ const db = path.join(
 
 let server: ChildProcess | undefined;
 
-async function start() {
+async function start(...extraArgs: string[]) {
 	server = spawn(
 		'node',
-		[cli, '--port', String(PORT), '--db', db, '--token-admin', ADMIN_TOKEN],
+		[
+			cli,
+			'--port',
+			String(PORT),
+			'--db',
+			db,
+			'--token-admin',
+			ADMIN_TOKEN,
+			...extraArgs,
+		],
 		{stdio: 'ignore'},
 	);
 	const deadline = Date.now() + 20000;
@@ -104,6 +113,59 @@ describe('cli', () => {
 		expect(result.result.data).toBe(data);
 		expect(result.result.counter).toBe(counter);
 	}, 30000);
+
+	it('empties the store on --clear, and only then', async () => {
+		// re-seed, since the previous test left the record in place
+		const signature = await wallet.signMessage(
+			`put:${namespace}:${counter}:${data}`,
+		);
+		await post({
+			jsonrpc: '2.0',
+			id: 5,
+			method: 'wallet_putString',
+			params: [wallet.address, namespace, counter, data, signature],
+		});
+
+		// a plain restart keeps it
+		await stop();
+		await start();
+		expect(
+			(
+				await post({
+					jsonrpc: '2.0',
+					id: 6,
+					method: 'wallet_getString',
+					params: [wallet.address, namespace],
+				})
+			).result.data,
+		).toBe(data);
+
+		// --clear drops it
+		await stop();
+		await start('--clear');
+		expect(
+			(
+				await post({
+					jsonrpc: '2.0',
+					id: 7,
+					method: 'wallet_getString',
+					params: [wallet.address, namespace],
+				})
+			).result,
+		).toEqual({data: '', counter: '0', signature: ''});
+
+		// and the cleared store is writable again, from counter 1 up
+		const reSignature = await wallet.signMessage(
+			`put:${namespace}:1:after-clear`,
+		);
+		const rewritten = await post({
+			jsonrpc: '2.0',
+			id: 8,
+			method: 'wallet_putString',
+			params: [wallet.address, namespace, '1', 'after-clear', reSignature],
+		});
+		expect(rewritten.result.success).toBe(true);
+	}, 60000);
 
 	it('resets with the admin token', async () => {
 		const reset = await post(

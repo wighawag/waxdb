@@ -26,6 +26,14 @@ export class PolyStorage implements Storage {
 	async delete(key: string): Promise<void> {
 		await this.store.del(key);
 	}
+
+	/**
+	 * Empties the whole store. Not part of `Storage`: the service itself must
+	 * never be able to do this, it exists for the CLI's `--clear` flag.
+	 */
+	async clear(): Promise<void> {
+		await this.store.clear();
+	}
 }
 
 export type StoreLocation = ':memory:' | string;

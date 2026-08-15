@@ -28,7 +28,7 @@ The core never touches a platform API. It receives `getStorage` and `getEnv` cal
 npx secp256k1-db --port 2000 --db ./secp256k1-db.json
 ```
 
-`--db :memory:` (the default) keeps everything in memory, any other value is a path to a JSON file it persists to. `--token-admin <token>` enables the `reset` method for requests carrying that value in a `TOKEN` header.
+`--db :memory:` (the default) keeps everything in memory, any other value is a path to a JSON file it persists to. `--clear` empties the store before starting, and `--token-admin <token>` enables the `reset` method for requests carrying that value in a `TOKEN` header.
 
 ## Development
 

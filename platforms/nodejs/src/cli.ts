@@ -21,7 +21,7 @@ async function main() {
 	program
 		.name('secp256k1-db')
 		.version(pkg.version)
-		.usage(`secp256k1-db [--port 2000] [--db ./data.json]`)
+		.usage(`[--port 2000] [--db ./data.json]`)
 		.description(
 			'run secp256k1-db locally: an authenticated key-value store for ethereum addresses',
 		)
@@ -34,12 +34,20 @@ async function main() {
 		.option(
 			'-t, --token-admin <token>',
 			'enable the reset method for requests carrying this TOKEN header',
+		)
+		.option(
+			'-c, --clear',
+			'empty the store before starting (deletes every record, not just one like the reset method)',
 		);
 
 	program.parse(process.argv);
 
-	const options: {port: string; db: string; tokenAdmin?: string} =
-		program.opts();
+	const options: {
+		port: string;
+		db: string;
+		tokenAdmin?: string;
+		clear?: boolean;
+	} = program.opts();
 	const port = parseInt(options.port);
 
 	const env: NodeJSEnv = {
@@ -49,6 +57,11 @@ async function main() {
 	};
 
 	const storage = createStorage(options.db);
+
+	if (options.clear) {
+		await storage.clear();
+		console.log(`cleared the store (${options.db})`);
+	}
 
 	const app = createServer<NodeJSEnv>({
 		getStorage: () => storage,
