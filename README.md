@@ -89,6 +89,8 @@ See [platforms/cf-worker/README.md](platforms/cf-worker/README.md). Read it befo
 
 `packages/server/test/contract/` holds one suite that every platform runs, plus an opt-in run against a deployed instance. It documents the current behaviour, quirks included, because live apps depend on the exact responses. Read [packages/server/test/README.md](packages/server/test/README.md) before changing anything user-visible.
 
+The behaviour being pinned is not the same as the behaviour being right. [KNOWN-ISSUES.md](KNOWN-ISSUES.md) lists what is wrong with it and what fixing each thing would break.
+
 ## License
 
 See the [LICENSE](LICENSE) file for details.

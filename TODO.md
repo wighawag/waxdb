@@ -5,9 +5,39 @@
   polystore wraps values (`{expires, value}`), which would rewrite the 2594
   live records into a format existing clients cannot read.
 
-- [ ] publish the CLI (`platforms/nodejs`, package `secp256k1-db`) so projects
-      can `npx secp256k1-db` for offline development
-- [ ] decide whether the contract's quirks (see `packages/server/test/README.md`)
-      are worth fixing behind a version flag, e.g. errors that serialise to `{}`
-      and the usage hint missing its closing brace
-- [ ] `reset` is still replayable (no counter), and inert until `TOKEN_ADMIN` is set
+- [ ] fix the issues in [KNOWN-ISSUES.md](KNOWN-ISSUES.md), in that order.
+      The first two are the ones that matter: `reset` allows replaying old
+      writes, and the signed message can be re-split into a different
+      namespace. Both are currently unreachable/unexploited, neither is
+      safe to leave.
+- [ ] publish the CLI (`platforms/nodejs`) and move the `helper-services/`
+      of the dependent repos over to it. They currently install the old
+      `secp256k1-db@0.0.1` source package purely to run the worker locally,
+      and their wrangler.toml points at a KV namespace id that no longer
+      exists. See "The npm package" below.
+- [ ] retire `manual-test/`, superseded by the contract suite and the CLI
+      smoke test
+
+## The npm package
+
+`secp256k1-db@0.0.1` (published 2023-09-15) ships only `src/handler.ts`,
+`src/index.ts`, `package.json` and `tsconfig.json`. No `main`, no `bin`, no
+`types`: it is not importable, and it was never meant to be. Dependent repos
+consume it as a *source drop*, with a local `helper-services/secp256k1-db/`
+whose wrangler.toml says:
+
+    main = "node_modules/secp256k1-db/src/index.ts"
+
+so that `wrangler dev` runs this service locally on a spare port. That is
+exactly the job `platforms/nodejs` now does, better.
+
+Two things to settle before publishing:
+
+- the meaning of the package changes from "worker source" to "CLI", so it
+  should go out as `1.0.0`, not `0.0.2`. `^0.0.1` does not resolve to
+  `0.0.2` anyway, so nothing auto-upgrades either way.
+- those helper-services pin KV namespace `6a9b71a2…`, which was deleted as
+  unused. Local `wrangler dev` is unaffected (miniflare treats the id as a
+  local label), but `--remote` or a deploy from those directories now fails.
+  Replacing the whole helper-service with `npx secp256k1-db --port <port>`
+  removes the problem rather than fixing it.

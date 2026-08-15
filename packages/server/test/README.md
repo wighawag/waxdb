@@ -33,7 +33,7 @@ The live KV already contains 2594 records written over several years. Every one 
 
 ## Quirks that are part of the contract
 
-These look like bugs. They are also observable behaviour, so the rewrite must reproduce them unless a deliberate decision says otherwise.
+These look like bugs. They are also observable behaviour, so any implementation must reproduce them unless a deliberate decision says otherwise. They are catalogued, with proposed fixes and what each fix would break, in [KNOWN-ISSUES.md](../../../KNOWN-ISSUES.md).
 
 1. Validation errors reach the client as **strings** shaped `"Error: <message>" + usage hint`, because the error is interpolated into a template literal. But errors raised without a usage hint (storage failures, and every `reset` validation error) are `JSON.stringify`'d as raw `Error` objects, which yields `{}`.
 2. The `wallet_getString` usage hint is missing its closing brace: `{"method":"wallet_getString", "params":["<address>","<namespace>"]`.
