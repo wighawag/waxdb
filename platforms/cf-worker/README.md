@@ -18,9 +18,10 @@ Both values were wrong in this repo between September 2023 and 2026, which would
 ## Deploy
 
 ```bash
-pnpm build          # from the repo root: the worker imports the built server
-pnpm deploy         # from the repo root, or `wrangler deploy` here
+pnpm run deploy     # from the repo root: builds the server, then deploys
 ```
+
+Note the `run`: `pnpm deploy` is a pnpm builtin (it prepares a deployable package folder) and will not execute this script. Inside this directory, `pnpm run deploy` works too, but the root script is preferable because it rebuilds `packages/server` first, which the worker imports.
 
 Then verify the deployment against the contract:
 

@@ -11,13 +11,13 @@
     ]
   },
   "scripts": {
-    "build": "pnpm -r build",
-    "test": "pnpm build && pnpm -r test",
-    "test:live": "pnpm --filter secp256k1-db-server test:live",
-    "dev:cf": "pnpm --filter secp256k1-db-cf-worker dev",
-    "dev:node": "pnpm --filter secp256k1-db dev",
-    "deploy": "pnpm --filter secp256k1-db-cf-worker deploy",
-    "format": "pnpm -r format",
-    "format:check": "pnpm -r format:check"
+    "build": "pnpm -r run build",
+    "test": "pnpm run build && pnpm -r run test",
+    "test:live": "pnpm --filter secp256k1-db-server run test:live",
+    "dev:cf": "pnpm --filter secp256k1-db-cf-worker run dev",
+    "dev:node": "pnpm --filter secp256k1-db run dev",
+    "deploy": "pnpm run build && pnpm --filter secp256k1-db-cf-worker run deploy",
+    "format": "pnpm -r run format",
+    "format:check": "pnpm -r run format:check"
   }
 }

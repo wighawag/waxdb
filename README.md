@@ -38,6 +38,7 @@ pnpm test          # the contract, on all platforms
 pnpm dev:cf        # wrangler dev
 pnpm dev:node      # the CLI against a local store
 pnpm build
+pnpm run deploy    # note the `run`: `pnpm deploy` is a pnpm builtin
 ```
 
 ## API
