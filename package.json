@@ -17,6 +17,9 @@
   },
 	"scripts": {
     "deploy": "wrangler deploy",
-    "start": "wrangler dev"
+    "start": "wrangler dev",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:live": "vitest run test/live.conformance.test.ts"
   }
 }

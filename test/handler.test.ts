@@ -1,7 +1,7 @@
 
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { UnstableDevWorker } from "wrangler";
+import type { Unstable_DevWorker } from "wrangler";
 import { unstable_dev } from "wrangler";
 import { Wallet } from '@ethersproject/wallet';
 
@@ -46,7 +46,7 @@ async function createGET( address: string,
 
 
 describe('handler returns response with request method', () => {
-	let worker: UnstableDevWorker;
+	let worker: Unstable_DevWorker;
 
   beforeAll(async () => {
     worker = await unstable_dev("src/index.ts", {
