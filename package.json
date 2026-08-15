@@ -1,25 +1,23 @@
 {
-  "name": "secp256k1-db",
-  "version": "0.0.1",
-  "files": ["src", "tsconfig.json"],
-	"publishConfig": {
-    "access": "public"
+  "name": "secp256k1-db-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "workerd"
+    ]
   },
-	"dependencies": {
-		"@ethersproject/wallet": "^5.0.0"
-	},
-  "devDependencies": {
-    "@cloudflare/workers-types": "^4.20230419.0",
-    "axios": "^1.5.0",
-    "typescript": "^5.0.4",
-    "vitest": "^0.34.4",
-    "wrangler": "^3.0.0"
-  },
-	"scripts": {
-    "deploy": "wrangler deploy",
-    "start": "wrangler dev",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:live": "vitest run test/live.conformance.test.ts"
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm build && pnpm -r test",
+    "test:live": "pnpm --filter secp256k1-db-server test:live",
+    "dev:cf": "pnpm --filter secp256k1-db-cf-worker dev",
+    "dev:node": "pnpm --filter secp256k1-db dev",
+    "deploy": "pnpm --filter secp256k1-db-cf-worker deploy",
+    "format": "pnpm -r format",
+    "format:check": "pnpm -r format:check"
   }
 }

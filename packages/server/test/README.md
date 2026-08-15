@@ -1,30 +1,30 @@
 # Behavioural contract
 
-These tests exist for one reason: this service is depended on by live apps, and it is about to be rewritten on top of `template-agnostic-server`. Everything the current implementation does, including its quirks, is pinned here **first**, so the rewrite can be proven identical rather than assumed identical.
+These tests exist for one reason: this service is depended on by live apps, and it was rewritten on top of the `template-agnostic-server` layout. Everything the pre-rewrite implementation did, including its quirks, was pinned here **first**, and the rewrite then had to satisfy it unchanged. The same suite now guards every platform.
 
 ## Layout
 
-- `support/contract.ts` is the contract itself: one `runContractTests(harness)` function containing every assertion. It is transport-agnostic, so the same suite runs against any implementation.
-- `support/memory-kv.ts` is an in-memory stand-in for the `KVNamespace` subset the handler uses.
-- `support/rpc.ts` builds signed JSON-RPC requests and computes storage keys.
-- `handler.contract.test.ts` runs the contract in-process against `src/handler.ts` with an in-memory KV, twice: with and without `TOKEN_ADMIN`. Because the KV is visible, this is the layer that pins the **exact bytes written to storage**.
-- `worker.contract.test.ts` runs the same contract on workerd via `wrangler unstable_dev`, pinning runtime-level details (status codes, header values, the body the Workers runtime produces for a `Response` built from an `Error`). Storage-level cases are skipped here, since the dev worker's KV is not reachable from the test.
+- `contract/contract.ts` is the contract itself: one `runContractTests(harness)` function containing every assertion. It is transport-agnostic, so the same suite runs against any implementation.
+- `contract/memory-storage.ts` is an in-memory `Storage`, doubling as the reference for what a platform adapter must do.
+- `contract/rpc.ts` builds signed JSON-RPC requests and computes storage keys. It deliberately re-implements the key layout rather than importing it, so a bug in the real one cannot hide.
+- `server.contract.test.ts` runs the contract in-process against `createServer`, twice: with and without `TOKEN_ADMIN`.
+- `../../../platforms/cf-worker/test/worker.contract.test.ts` runs it on real workerd against a real (miniflare-backed) KV binding, so the storage-byte assertions run there too.
+- `../../../platforms/nodejs/test/nodejs.contract.test.ts` runs it over polystore, both in memory and against a JSON file on disk.
 - `live.conformance.test.ts` runs the contract against a deployed instance. Opt-in, and it **writes** to that instance (random addresses, unique namespaces).
-- `handler.test.ts` is the original smoke test, kept as-is.
 
 ## Running
 
 ```bash
-pnpm test          # in-process + workerd contract
+pnpm test          # from the repo root: every platform
 pnpm test:watch
-LIVE_URL=https://secp256k1-kv-db.rim.workers.dev pnpm test:live
+LIVE_URL=https://secp256k1-kv-db.rim.workers.dev LIVE_RESET=true pnpm test:live
 ```
 
 `LIVE_RESET=true` additionally asserts that the deployment implements the `reset` method (see below).
 
 ## Storage compatibility (the part that must not break)
 
-The live KV already contains records written over several years. The contract pins the format:
+The live KV already contains 2594 records written over several years. Every one of them matches the layout below, verified by listing the whole namespace. The contract pins it:
 
 - key: `` `${namespace}_${address.toLowerCase()}` `` (no separator prefix when the namespace is empty, though an empty namespace is rejected upstream by validation)
 - value: `JSON.stringify({data, counter, signature})`, with `counter` as a decimal string
@@ -45,6 +45,8 @@ These look like bugs. They are also observable behaviour, so the rewrite must re
 8. Non-POST/OPTIONS requests get `please use jsonrpc POST request` as `text/plain` with **no** CORS headers; malformed JSON gets a 400 whose body is the raw parser error text.
 9. `Content-Type` is never checked.
 
-## Known divergence: HEAD vs the live deployment
+10. The service ignores the request path and the query string entirely, so clients may post to any URL on the host.
 
-Read-only probes against `https://secp256k1-kv-db.rim.workers.dev/` match this contract byte-for-byte, with one exception: the live worker answers `"reset" not supported`, i.e. it predates commit `b7b11d5` ("add reset capabilities"). The live deployment is therefore **older than this repo's HEAD**, which matters when deciding what "same behaviour after redeploy" means for the `reset` method.
+## History
+
+The deployment was, for a while, older than this repo: it answered `"reset" not supported`, predating commit `b7b11d5`. That gap was closed by redeploying before the rewrite started, so the contract, `master` and production now describe the same service. Set `LIVE_RESET=true` when running against a deployment that has the `reset` method.

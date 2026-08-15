@@ -38,7 +38,7 @@ export type ContractHarness = {
 	 */
 	resetImplemented?: boolean;
 	/** direct access to the underlying store, when the harness can provide it */
-	kv?: {
+	storage?: {
 		get(key: string): Promise<string | null>;
 		put(key: string, value: string): Promise<void>;
 	};
@@ -52,8 +52,8 @@ type RpcBody = {
 };
 
 export function runContractTests(harness: ContractHarness) {
-	/** storage-level tests only run on harnesses that expose the underlying KV */
-	const itKV = harness.kv ? it : it.skip;
+	/** storage-level tests only run on harnesses that expose the underlying store */
+	const itStorage = harness.storage ? it : it.skip;
 
 	const post = (
 		body: unknown,
@@ -501,7 +501,7 @@ export function runContractTests(harness: ContractHarness) {
 			expect(read.body.result).toEqual({ data, counter, signature });
 		});
 
-		itKV('persists under `<namespace>_<lowercase address>` as a JSON {data, counter, signature}', async () => {
+		itStorage('persists under `<namespace>_<lowercase address>` as a JSON {data, counter, signature}', async () => {
 			const namespace = uniqueNamespace();
 			const wallet = Wallet.createRandom();
 			const counter = (Date.now() - 1000).toString();
@@ -509,7 +509,7 @@ export function runContractTests(harness: ContractHarness) {
 			const request = await putRequest(wallet, { namespace, counter, data });
 			await postJSON(request);
 
-			const raw = await harness.kv!.get(storageKey(namespace, wallet.address));
+			const raw = await harness.storage!.get(storageKey(namespace, wallet.address));
 			expect(raw).toBe(
 				JSON.stringify({ data, counter, signature: request.params[4] })
 			);
@@ -804,8 +804,8 @@ export function runContractTests(harness: ContractHarness) {
 					address: wallet.address, // ethers returns the checksummed form
 				})
 			);
-			if (harness.kv) {
-				const raw = await harness.kv.get(
+			if (harness.storage) {
+				const raw = await harness.storage!.get(
 					storageKey(namespace, wallet.address)
 				);
 				expect(raw).not.toBe(null);
@@ -835,10 +835,10 @@ export function runContractTests(harness: ContractHarness) {
 	});
 
 	describe(`[${harness.name}] stored data compatibility`, () => {
-		itKV('returns legacy records that have no signature field verbatim', async () => {
+		itStorage('returns legacy records that have no signature field verbatim', async () => {
 			const namespace = uniqueNamespace();
 			const wallet = Wallet.createRandom();
-			await harness.kv!.put(
+			await harness.storage!.put(
 				storageKey(namespace, wallet.address),
 				JSON.stringify({ data: 'legacy', counter: '1618828000000' })
 			);
@@ -846,10 +846,10 @@ export function runContractTests(harness: ContractHarness) {
 			expect(body.result).toEqual({ data: 'legacy', counter: '1618828000000' });
 		});
 
-		itKV('passes unknown extra fields through untouched', async () => {
+		itStorage('passes unknown extra fields through untouched', async () => {
 			const namespace = uniqueNamespace();
 			const wallet = Wallet.createRandom();
-			await harness.kv!.put(
+			await harness.storage!.put(
 				storageKey(namespace, wallet.address),
 				JSON.stringify({
 					data: 'x',
@@ -867,11 +867,11 @@ export function runContractTests(harness: ContractHarness) {
 			});
 		});
 
-		itKV('a legacy record still gates writes by counter', async () => {
+		itStorage('a legacy record still gates writes by counter', async () => {
 			const namespace = uniqueNamespace();
 			const wallet = Wallet.createRandom();
 			const counter = (Date.now() - 5000).toString();
-			await harness.kv!.put(
+			await harness.storage!.put(
 				storageKey(namespace, wallet.address),
 				JSON.stringify({ data: 'legacy', counter })
 			);
@@ -894,10 +894,10 @@ export function runContractTests(harness: ContractHarness) {
 			expect(newer.body.result.success).toBe(true);
 		});
 
-		itKV('corrupted stored JSON surfaces as an opaque error', async () => {
+		itStorage('corrupted stored JSON surfaces as an opaque error', async () => {
 			const namespace = uniqueNamespace();
 			const wallet = Wallet.createRandom();
-			await harness.kv!.put(
+			await harness.storage!.put(
 				storageKey(namespace, wallet.address),
 				'{not json'
 			);
@@ -979,8 +979,8 @@ export function runContractTests(harness: ContractHarness) {
 				counter: '0',
 				signature: '',
 			});
-			if (harness.kv) {
-				expect(await harness.kv.get(storageKey(namespace, wallet.address))).toBe(
+			if (harness.storage) {
+				expect(await harness.storage!.get(storageKey(namespace, wallet.address))).toBe(
 					null
 				);
 			}

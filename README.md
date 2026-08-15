@@ -2,56 +2,52 @@
 
 An authenticated key-value database using secp256k1 signatures (compatible with Ethereum wallets).
 
-## Overview
+Data is stored per Ethereum address, and only the holder of the private key can write it: every write carries a signature over the value, and a counter prevents replaying an older write. Reads are public.
 
-This service allows storing and retrieving data associated with Ethereum addresses, where only the owner of the private key can modify their data. All write operations require a valid signature from the address owner, ensuring data integrity and authentication.
+The service runs on Cloudflare Workers (the deployment live apps talk to) and as a local Node process, from the same platform-agnostic core.
 
-Key features:
-- Read/write/delete string values associated with Ethereum addresses
-- Namespace support for organizing data
-- Counter-based versioning to prevent data overwrites
-- JSONRPC API with CORS support
-- Designed for Cloudflare Workers with KV storage
+## Layout
 
-## Installation
+```
+packages/
+  server/            core service, no platform APIs, storage behind an interface
+    src/api/         the JSON-RPC handler
+    src/record.ts    the on-disk format (frozen: live data depends on it)
+    src/storage.ts   the storage seam
+    test/contract/   the behavioural contract, run against every platform
+platforms/
+  cf-worker/         Cloudflare Workers: Storage -> KV namespace
+  nodejs/            CLI: Storage -> polystore (memory or a JSON file)
+```
+
+The core never touches a platform API. It receives `getStorage` and `getEnv` callbacks, and each platform supplies its own, which is what makes the same code (and the same tests) run on Workers and on Node.
+
+## Using it locally (offline)
 
 ```bash
-# Clone the repository
-git clone https://github.com/etherplay/secp256k1-db.git
-cd secp256k1-db
-
-pnpm install
+npx secp256k1-db --port 2000 --db ./secp256k1-db.json
 ```
+
+`--db :memory:` (the default) keeps everything in memory, any other value is a path to a JSON file it persists to. `--token-admin <token>` enables the `reset` method for requests carrying that value in a `TOKEN` header.
 
 ## Development
 
-To start the development server:
-
 ```bash
-pnpm start
+pnpm install
+pnpm test          # the contract, on all platforms
+pnpm dev:cf        # wrangler dev
+pnpm dev:node      # the CLI against a local store
+pnpm build
 ```
 
-This will start a local Cloudflare Workers development server.
+## API
 
-## Deployment
-
-To deploy to Cloudflare Workers:
-
-```bash
-pnpm run deploy
-```
-
-## API Methods
+All methods are JSON-RPC 2.0 over `POST`. The path is ignored, so any path works.
 
 ### `wallet_getString`
 
-Retrieves data associated with an Ethereum address in a specific namespace.
+Reads the record for an address in a namespace. Returns `{data, counter, signature}`, or `{data: "", counter: "0", signature: ""}` when nothing is stored.
 
-Parameters:
-- `address`: Ethereum address (0x-prefixed)
-- `namespace`: String namespace
-
-Example:
 ```json
 {
   "jsonrpc": "2.0",
@@ -63,16 +59,8 @@ Example:
 
 ### `wallet_putString`
 
-Stores data associated with an Ethereum address in a specific namespace. Requires a valid signature.
+Writes a record. Parameters are `address`, `namespace`, `counter`, `data`, `signature`, where the signature is over the message `put:${namespace}:${counter}:${data}` and the counter is a millisecond timestamp that must be greater than the stored one and not in the future.
 
-Parameters:
-- `address`: Ethereum address (0x-prefixed)
-- `namespace`: String namespace
-- `counter`: Counter value (typically current timestamp in ms)
-- `data`: String data to store
-- `signature`: Signed message of `put:${namespace}:${counter}:${data}`
-
-Example:
 ```json
 {
   "jsonrpc": "2.0",
@@ -88,13 +76,18 @@ Example:
 }
 ```
 
-## Configuration
+### `reset`
 
-In `wrangler.toml`:
-- Set up your KV namespace bindings
-- Configure your Cloudflare Worker name and compatibility date
+Deletes a record. Requires the `TOKEN` header to match `TOKEN_ADMIN`, and is inert when that is unset.
+
+## Deployment
+
+See [platforms/cf-worker/README.md](platforms/cf-worker/README.md). Read it before deploying: the worker name and KV namespace id in `wrangler.toml` are not interchangeable, they identify the live service and its data.
+
+## Behaviour is pinned by tests
+
+`packages/server/test/contract/` holds one suite that every platform runs, plus an opt-in run against a deployed instance. It documents the current behaviour, quirks included, because live apps depend on the exact responses. Read [packages/server/test/README.md](packages/server/test/README.md) before changing anything user-visible.
 
 ## License
 
 See the [LICENSE](LICENSE) file for details.
-

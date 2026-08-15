@@ -1,0 +1,16 @@
+{
+	"compilerOptions": {
+		"strict": true,
+		"target": "ESNext",
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"lib": ["ESNext"],
+		"skipLibCheck": true,
+		"sourceMap": true,
+		"declaration": true,
+		"rootDir": "./src",
+		"outDir": "./dist",
+		"types": ["node"]
+	},
+	"include": ["src/**/*.ts"]
+}

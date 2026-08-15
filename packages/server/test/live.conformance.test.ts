@@ -1,9 +1,9 @@
 /**
  * OPT-IN conformance run against a *deployed* instance.
  *
- * It proves that the contract captured by `handler.contract.test.ts` /
- * `worker.contract.test.ts` is really what production serves today, and later
- * that a redeployed (rewritten) service still serves it.
+ * It proves that the contract captured by `server.contract.test.ts` and
+ * `platforms/cf-worker/test/worker.contract.test.ts` is really what production
+ * serves, both for the currently deployed build and for any redeploy.
  *
  *     LIVE_URL=https://secp256k1-kv-db.rim.workers.dev pnpm test:live
  *
@@ -12,7 +12,7 @@
  * It is skipped unless LIVE_URL is set.
  */
 import { describe, it } from 'vitest';
-import { runContractTests, type ContractHarness } from './support/contract';
+import {runContractTests, type ContractHarness} from './contract/contract.js';
 
 const LIVE_URL = process.env.LIVE_URL;
 const RESET_IMPLEMENTED = process.env.LIVE_RESET === 'true';

@@ -1,11 +1,10 @@
+import type {Storage} from '../../src/storage.js';
+
 /**
- * Minimal in-memory stand-in for the subset of `KVNamespace` that the handler uses.
- *
- * Only `get`, `put` and `delete` are exercised by `src/handler.ts`.
- * Values are stored verbatim as strings, exactly like Cloudflare KV does for
- * string values, so tests can assert on the exact bytes that get persisted.
+ * In-memory `Storage`, used both as a test double and as the reference for what
+ * a platform adapter must do: keep the string it was given, byte for byte.
  */
-export class MemoryKV {
+export class MemoryStorage implements Storage {
 	readonly store = new Map<string, string>();
 
 	async get(key: string): Promise<string | null> {

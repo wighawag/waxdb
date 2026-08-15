@@ -1,0 +1,28 @@
+{
+  "name": "secp256k1-db-cf-worker",
+  "version": "0.0.1",
+  "description": "Cloudflare Workers platform for secp256k1-db",
+  "license": "AGPL-3.0-only",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "secp256k1-db-server": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.5.36",
+    "@cloudflare/workers-types": "^4.20241205.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8",
+    "wrangler": "^3.95.0"
+  },
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:live": "vitest run test/live.conformance.test.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  }
+}

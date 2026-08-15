@@ -1,5 +1,5 @@
 name = "secp256k1-kv-db"
-main = "src/index.ts"
+main = "src/worker.ts"
 compatibility_date = "2023-09-14"
 
 [[kv_namespaces]]

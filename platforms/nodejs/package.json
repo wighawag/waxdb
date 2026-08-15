@@ -1,0 +1,41 @@
+{
+  "name": "secp256k1-db",
+  "version": "0.0.2",
+  "description": "run secp256k1-db locally, offline: an authenticated key-value store for ethereum addresses",
+  "license": "AGPL-3.0-only",
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "bin": {
+    "secp256k1-db": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "dependencies": {
+    "@hono/node-server": "^1.13.8",
+    "commander": "^13.1.0",
+    "polystore": "^0.27.0",
+    "secp256k1-db-server": "workspace:*"
+  },
+  "devDependencies": {
+    "@ethersproject/wallet": "^5.0.0",
+    "@types/node": "^22.13.10",
+    "as-soon": "^0.0.11",
+    "prettier": "^3.4.2",
+    "typescript": "^5.8.2",
+    "vitest": "^2.1.8"
+  },
+  "scripts": {
+    "pretest": "pnpm build",
+    "build": "tsc",
+    "build:watch": "as-soon -w src tsc",
+    "dev": "node --experimental-strip-types src/cli.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  }
+}
