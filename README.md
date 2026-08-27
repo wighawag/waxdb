@@ -1,8 +1,8 @@
 # waxdb
 
-An authenticated key-value store for ethereum addresses. Anyone can read a record, only the holder of the key can write one.
+An authenticated key-value store for ethereum addresses. Only the holder of the key can write a record, and unless the deployment opens reads up, only that same holder can read it.
 
-A record is an opaque **payload of bytes** plus the secp256k1 signature that authorises it, stored under `(namespace, owner)`. A counter that must increase stops an old write being replayed. The payload is never interpreted by the server, and in practice it is compressed ciphertext.
+A record is an opaque **payload of bytes** plus the secp256k1 signature that authorises it, stored under `(namespace, owner)`. A counter that must increase stops an old write being replayed. Reads need a short-lived token signed by the owner, unless the deployment is configured for public reads. The payload is never interpreted by the server, and in practice it is compressed ciphertext, so the host cannot read it either.
 
 **The device is the source of truth and waxdb is a cache.** A record cannot be recovered, migrated or re-signed by the server, because only the key holder can sign. Clients are expected to hold their own copy and treat a read as input to a merge rather than as an authority, which is what makes losing the server copy a re-push rather than a loss.
 

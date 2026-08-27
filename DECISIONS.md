@@ -153,6 +153,24 @@ The default of 4 MiB is set by the Worker, not by the store. A Worker isolate ha
 
 ---
 
+## 16. Reads are authenticated, and that is the default
+
+**Why.** secp256k1-db made reads public, and waxdb inherited the assumption until it was questioned rather than chosen. Encryption already keeps the *content* private, from the host included, so read authentication is not buying confidentiality. It buys two narrower things that encryption cannot: **metadata privacy** (that a record exists at all, its size, its counter, when it last changed) and **resistance to harvesting** (someone who learns an address cannot pull every namespace it has).
+
+Default-on rather than opt-in, because the safe setting should be the one you get by not thinking, and because the only thing lost is a property nothing depends on. An operator who wants an open deployment sets `PUBLIC_READS`.
+
+It is a **deployment setting, not a per-record one**. Nothing about it appears in the signed message or in the stored record, which is what keeps it out of the format entirely: read authentication can be turned on, off, or added to an existing deployment without invalidating a single signature.
+
+**Costs, and the one that has no clean answer.** A write cannot be replayed because the counter must increase. A read advances nothing, so it has no equivalent, and any stateless read credential is a bearer token until it expires. The stateful fix, a server-issued nonce, needs a storage write per read against a store allowing one write per second per key with up to a minute of propagation delay, so it is not available at this price point.
+
+The answer is therefore to bound the window rather than close it, which is proportionate for what the window is worth: the payload is opaque and in practice encrypted, so a replayed read returns ciphertext, and **replay repeats the leak rather than escalating it**, since whoever captured the token already saw one response. The incremental gain is watching a record change over time, and the expiry caps exactly that.
+
+The other cost is that failures have to be indistinguishable from absence, so a wrong or expired token gets `404` rather than `401`. That is worse to debug and it is the only shape that does not hand back through the error code the very existence the token was protecting. The same reasoning forces the write path to verify signatures before it touches storage.
+
+The third cost is the one to be clear-eyed about: **a deployment is all-authenticated or all-open.** Mixing public and private records in one deployment would need the choice inside the signed message, and per decision 6 there is no cheap way to add a line later. An app that wants both runs two deployments. That is the deliberate trade: keeping this out of the format is what makes it free to change, and the price is that it cannot vary per record.
+
+Sharing with anyone other than the owner is deliberately not here either: it is an ACL, with naming and revocation, and it is a feature rather than a field. Multiple devices are already covered, because devices deriving the same key share one address.
+
 ## The frozen predecessor
 
 `etherplay/secp256k1-db`, archived. Its deployment is still running and still serving apps that cannot be rebuilt.

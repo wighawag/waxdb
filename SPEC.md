@@ -4,7 +4,9 @@ Normative. Every rule here is checkable, and the ones that look fussy are load-b
 
 There is one format and no version field. The reasoning is DECISIONS.md #6, and the short version is that the message text already separates this format from any other, and the namespace already partitions data, so a version number would be insurance against a change nobody can specify.
 
-waxdb stores one record per `(namespace, owner)`. A record is an opaque **payload of bytes** plus the signature that authorises it. Reads are public. Writes carry a secp256k1 signature over a message that binds every field of the write, and a counter that must increase. The server verifies and stores; it never interprets what it stores.
+waxdb stores one record per `(namespace, owner)`. A record is an opaque **payload of bytes** plus the signature that authorises it. Writes carry a secp256k1 signature over a message that binds every field of the write, and a counter that must increase. The server verifies and stores; it never interprets what it stores.
+
+**Reads are authenticated by default.** A record is readable only by its owner, who proves it with a short-lived token signed by the same key that writes it. This is a **deployment setting, not a per-record one**: an operator can open a deployment up with `PUBLIC_READS`, and nothing about it appears in the signed message or in the stored record.
 
 **The device is the source of truth and the server is a cache.** Nothing here lets a record be recovered, migrated or re-signed by the server, because only the key holder can produce a signature. Every decision below assumes a client that can rebuild its state from local storage.
 
@@ -29,6 +31,7 @@ Every one of these is a rejection rule, never a normalisation rule. A value that
 | `owner` | `0x` followed by 40 lowercase hex characters |
 | `counter` | `0` or `[1-9][0-9]*`. No leading zeros, no hex, no exponent |
 | `expected` | `any`, `none`, or a `counter` |
+| `expires` | unix **seconds**, `0` or `[1-9][0-9]*`. No leading zeros |
 | `payloadHash` | `0x` followed by 64 lowercase hex characters, `keccak256` of the payload bytes |
 | `signature` | `0x` followed by 130 hex characters |
 
@@ -111,9 +114,18 @@ Counter: <counter>
 Expected: <expected>
 ```
 
+And to read a private record:
+
+```
+waxdb read
+Namespace: <namespace>
+Owner: <owner>
+Expires: <expires>
+```
+
 Lines are joined with `\n` and there is no trailing newline.
 
-**Why this cannot be re-split.** The line count is fixed (six for a store, five for a delete), the labels are fixed, and no field can contain a newline because every charset excludes one. The message therefore determines exactly one tuple, and there is no second `(namespace, counter, payload)` producing the same bytes. This is the reason waxdb exists as a separate protocol: the predecessor joined its fields with `:` and a payload containing an ISO-8601 timestamp could be re-read as a different namespace.
+**Why this cannot be re-split.** The line count is fixed (six for a store, five for a delete, four for a read), the labels are fixed, and no field can contain a newline because every charset excludes one. The message therefore determines exactly one tuple, and there is no second `(namespace, counter, payload)` producing the same bytes. This is the reason waxdb exists as a separate protocol: the predecessor joined its fields with `:` and a payload containing an ISO-8601 timestamp could be re-read as a different namespace.
 
 The two headers give the two intents different bytes, so a store signature can never be replayed as a delete. The `waxdb` header is also what separates this format from any other that might ever sign with the same key: change the format and that line and its labels change with it, so signatures cannot cross over. That is the job a version field would otherwise be doing, done by bytes that have to exist anyway.
 
@@ -148,6 +160,36 @@ The rule keeps counters comparable across devices that have never talked to each
 
 The counter's *meaning* is a client convention. A millisecond timestamp and a plain `stored + 1` both satisfy these rules and interoperate.
 
+## Reading, and the read token
+
+When `PUBLIC_READS` is set, reads are anonymous and none of this section applies. Otherwise, which is the default, a read carries a token in two headers:
+
+```
+Waxdb-Read-Expires: <expires>
+Waxdb-Read-Signature: 0x…
+```
+
+The server checks, in this order:
+
+1. **Syntax.** A malformed expiry or signature is `400 invalid_read_token`. This is decided before any storage lookup, so it reveals nothing about the record while staying debuggable.
+2. **Not expired**: `expires + T >= now`, with the same **T = 60 seconds** the write ceiling uses, so a client whose clock runs slightly behind is not locked out of its own data.
+3. **Not absurdly long-lived**: `expires <= now + MAX_READ_TOKEN_SECONDS`, so no client can mint a credential that outlives its usefulness.
+4. **Signed by the owner**: recover from the `waxdb read` message and compare to `owner`.
+
+**Every failure of 2, 3 or 4 answers `404` with `{"found": false}`, exactly as absence does**, and so does a read with no token at all. A `401` would tell an unauthenticated prober that a record exists, which is precisely the metadata the token protects. Only an authenticated reader can tell the difference between a record and nothing.
+
+The same rules apply to `HEAD`.
+
+### What replay costs, and why this is the plan
+
+A write cannot be replayed: the counter must increase, so a captured write is dead as soon as it lands. **A read advances nothing, so it has no equivalent.** Any stateless credential is a bearer token until it expires, and that is a property of the problem rather than of this design.
+
+The stateful fix, a server-issued nonce, is not available: it costs a storage write per read against a store that permits one write per second per key and takes up to a minute to propagate between regions, so a nonce minted in one location is not reliably visible at the next one.
+
+So the window is bounded instead, and it is worth being exact about what the window buys an attacker. The payload is opaque, and in practice encrypted, so a replayed read yields ciphertext either way. **Replay repeats the leak rather than escalating it**: whoever captured the token already saw one response. The only incremental gain is watching the record change over time, and the expiry is what caps that.
+
+Clients should therefore sign per read with a short expiry rather than hold a long-lived token. Signing with a local key is sub-millisecond, and a changing header value costs nothing, because the CORS preflight cache keys on header names rather than values.
+
 ## Preconditions
 
 `Expected` is part of the signed message, so it cannot be stripped in transit.
@@ -169,7 +211,7 @@ All requests and responses carry:
 ```
 Access-Control-Allow-Origin: *
 Access-Control-Allow-Methods: GET,HEAD,PUT,DELETE,OPTIONS
-Access-Control-Allow-Headers: Content-Type,If-None-Match,Waxdb-Counter,Waxdb-Expected,Waxdb-Signature,Waxdb-Data-Hash
+Access-Control-Allow-Headers: Content-Type,If-None-Match,Waxdb-Counter,Waxdb-Expected,Waxdb-Signature,Waxdb-Data-Hash,Waxdb-Read-Expires,Waxdb-Read-Signature
 Access-Control-Expose-Headers: ETag,Waxdb-Counter,Waxdb-Signature,Waxdb-Data-Hash,Waxdb-Deleted,Waxdb-Server-Time
 Access-Control-Max-Age: 86400
 ```
@@ -231,6 +273,8 @@ The verb is the intent, and it must match the intent in the signed message: `PUT
 
 **Writes buffer, and cannot stream.** Verification has to precede the write and the payload hash is only known once the body is consumed, so the server holds the payload once, hashes it, verifies, checks the counter and the precondition, and only then stores. This is why writes have a size cap and reads do not.
 
+That order is also a leak defence, and it is not optional on a deployment with authenticated reads. **The signature must be verified before storage is consulted**, or the difference between `signature_mismatch` and `counter_not_increasing` tells an unauthenticated prober whether a record exists, handing back through the write path exactly what the read path refuses to say.
+
 `200` on success and `409` on a rejected write, both with `Content-Type: application/json`:
 
 ```json
@@ -259,6 +303,7 @@ Every non-2xx response except `304` and the `404` above has `Content-Type: appli
 | 400 | `invalid_counter` | missing or not canonical decimal |
 | 400 | `invalid_expected` | not `any`, `none` or canonical decimal |
 | 400 | `invalid_signature_format` | not 65 bytes of hex |
+| 400 | `invalid_read_token` | malformed read expiry or signature. Never returned for a token that is merely wrong or expired |
 | 400 | `invalid_data_hash` | missing or malformed on a `PUT` |
 | 400 | `data_hash_mismatch` | the body does not hash to `Waxdb-Data-Hash`. Usually a truncated upload |
 | 400 | `counter_in_future` | above the ceiling. Carries `Waxdb-Server-Time` so a client can measure its own skew |
@@ -283,6 +328,8 @@ The server must map that exception to `rate_limited` rather than letting it beco
 | | |
 | --- | --- |
 | `namespace` | 256 bytes |
+| read authentication | deployment policy, on unless `PUBLIC_READS` is set |
+| read token lifetime | deployment policy, `MAX_READ_TOKEN_SECONDS`, default 3600 |
 | payload on write | deployment policy, default 10 MiB. Not a protocol constant |
 | payload on read | unbounded, streamed |
 | stored value | 25 MiB, platform limit, applies to the payload directly |
@@ -295,7 +342,7 @@ Because the payload is stored verbatim, the platform's 25 MiB value limit applie
 
 The default of 10 MiB is set by the Worker rather than the store. A write holds the payload once while hashing and verifying it, so memory is roughly one to two times the payload against a 128 MB isolate shared across the concurrent requests it is serving.
 
-**CPU is what decides which plan a deployment can run on**, and it applies to writes only. A read is streamed and never hashed, so reads are cheap at any size on any plan. A write must hash the whole payload before it can verify anything, so its cost is linear in payload size:
+**CPU is what decides which plan a deployment can run on**, and it is overwhelmingly a write cost. A read is streamed and never hashed, so it is cheap at any size; verifying a read token adds one signature recovery, which is constant and small but not free on a 10 ms budget. A write must hash the whole payload before it can verify anything, so its cost is linear in payload size:
 
 | | Workers Free | Workers Paid |
 | --- | --- | --- |
@@ -316,6 +363,7 @@ The message encoding is the only thing keeping a client and the server in agreem
 - **Delegated writes**, where the signer is a session key and `owner` is a user account. Non-breaking because `Owner` is already in the signed message: only the authorisation rule changes, and the delegation proof rides as an unsigned header.
 - **EIP-712 signing**, if a third-party wallet should ever auto-sign writes scoped to an origin. That is a different message format, so it is a different service or a namespace the client moves to, at a cost known in advance: a client-side re-push.
 - **Streaming writes**, which need a content-addressed two-phase design (upload a blob under its own hash, then point a small signed record at it). That also brings deduplication and orphan collection. Additive: a new endpoint, no change to the message.
+- **Sharing a private record with someone other than its owner.** That is an ACL, and it needs a way for an owner to name a reader and for that grant to be revocable, which is a feature rather than a field. The owner-only case needs none of it, and the multi-device case is already covered because devices deriving the same key share one address.
 - **Per-item records** instead of one payload, using `scope`-style namespaces such as `app.ops-<id>`. Already possible with no protocol change. It trades away the consistent snapshot and leaks item count and sizes to the server.
 - **Compare-and-swap.** A `Storage` seam change rather than a wire change.
 - **Rate limiting and quotas** beyond the platform's own. Platform-layer concerns, outside the core.

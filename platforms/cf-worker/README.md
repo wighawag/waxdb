@@ -34,7 +34,7 @@ When reading or writing KV from the command line, `--remote` matters: wrangler 4
 
 ## Plan
 
-Reads are streamed and never hashed, so they are cheap at any size on any plan. Writes hash the whole payload before they can verify it, so their CPU cost is linear in payload size, and that is what decides which plan a deployment can run on. Workers Free allows 10 ms of CPU per request and 1,000 KV writes per day across all keys. Set `MAX_PAYLOAD_BYTES` accordingly: the 10 MiB default assumes a paid plan.
+Reads are streamed and never hashed, so they are cheap at any size, give or take the one signature recovery that verifying a read token costs. Writes hash the whole payload before they can verify it, so their CPU cost is linear in payload size, and that is what decides which plan a deployment can run on. Workers Free allows 10 ms of CPU per request and 1,000 KV writes per day across all keys. Set `MAX_PAYLOAD_BYTES` accordingly: the 10 MiB default assumes a paid plan.
 
 ## Secrets
 
