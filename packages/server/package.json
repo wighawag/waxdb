@@ -1,6 +1,6 @@
 {
 	"name": "@waxdb/server",
-	"version": "0.0.1",
+	"version": "0.1.0",
 	"description": "platform-agnostic secp256k1-authenticated key-value server",
 	"license": "AGPL-3.0-only",
 	"publishConfig": {
