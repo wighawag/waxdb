@@ -1,6 +1,6 @@
 {
 	"name": "waxdb",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "run waxdb locally, offline: an authenticated key-value store for ethereum addresses",
 	"license": "AGPL-3.0-only",
 	"publishConfig": {

@@ -1,6 +1,6 @@
 {
 	"name": "@waxdb/client",
-	"version": "0.0.1",
+	"version": "0.1.0",
 	"description": "MIT client for waxdb: an authenticated key-value store for ethereum addresses",
 	"license": "MIT",
 	"publishConfig": {
