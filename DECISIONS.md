@@ -206,6 +206,22 @@ And `crypto.subtle` requires a secure context, so a client served over plain HTT
 
 One caveat on the measurements, recorded so a future re-run is not confusing: `crypto.subtle`'s SHA-256 uses the CPU's SHA extensions. The machine here has them and so does Cloudflare's fleet (AMD EPYC, Zen 1 onward), so the ratio holds in production, but hardware without `sha_ni` will show a much smaller gap.
 
+## 18. `If-None-Match` is the only conditional read
+
+**Why.** An earlier draft specified a `?since=<counter>` query parameter alongside `If-None-Match`, and said plainly why: `If-None-Match` is not a CORS-safelisted request header, so the idiomatic conditional GET "costs a preflight on every poll" and the query form does not.
+
+That premise is false, and it was already retracted while designing read authentication (decision 16), where the same question came up for the token headers and got the right answer: **a preflight result is cached per URL**, for up to two hours in Chrome and twenty-four in Firefox, keyed on header *names* rather than values. A client polling one record pays one preflight every couple of hours, not one per request. The retraction reached decision 16 and the read-token section; nobody went back and removed the feature it had justified, so the specification ended up asserting both things in two different sections.
+
+With the premise gone, the duplicate has to argue for itself, and it cannot:
+
+- **It buys nothing in the configuration that ships.** Reads are authenticated by default, so every read already carries `Waxdb-Read-Expires` and `Waxdb-Read-Signature`, both non-safelisted. The preflight is paid regardless, and `If-None-Match` is already in `Access-Control-Allow-Headers`, so it rides the same one for free.
+- **It is a second conditional with different semantics.** `If-None-Match` is ETag equality; `?since` was `stored <= since`. Two nearly-identical rules for one resource is how a client and a server drift apart while both look correct.
+- **It is the only protocol value that would travel in a URL** rather than in a header or the signed message, which puts it in logs and proxy caches that headers do not reach.
+
+**Costs.** An *anonymous* client polling a `PUBLIC_READS` deployment makes a simple request today and would now trigger a preflight: one per record URL every two hours, about 0.4% overhead at a thirty-second poll. That is the cost the retraction already judged affordable when it accepted header-based read tokens.
+
+The reason this is a comfortable decision rather than a finely balanced one is that **it is reversible for free**. `?since` is not part of the signed message, so re-adding it later is additive and needs no format change, which is true of almost nothing else here. Where a decision can be revisited at no cost, prefer the smaller surface.
+
 ## The frozen predecessor
 
 `etherplay/secp256k1-db`, archived. Its deployment is still running and still serving apps that cannot be rebuilt.

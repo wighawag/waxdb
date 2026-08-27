@@ -12,9 +12,9 @@ Ordered. [SPEC.md](SPEC.md) is the target, [DECISIONS.md](DECISIONS.md) is why.
 
 - [x] **The contract suite**, one `runContractTests(harness)` against the in-process server, real workerd, and both Node backends, each in both read modes, plus `vectors.json` and a CLI smoke test that survives a restart.
 
-## Next
+- [x] **Drop `?since=<counter>`.** Its justification had been retracted but the feature outlived it, leaving SPEC.md asserting both that `If-None-Match` costs a preflight per poll and that it does not. `If-None-Match` is now the only conditional read. DECISIONS.md #18.
 
-- [ ] **Decide on `?since=<counter>`.** Its justification in SPEC.md was retracted on 2026-08-26 (preflight results are cached per URL, so `If-None-Match` does not cost a preflight per poll) but the feature and the stale reasoning are still in the spec. **It is currently not implemented**: conditional reads are `If-None-Match` only. Either delete it from SPEC.md and add the decision, or say so and it goes back in as about five lines.
+## Next
 
 - [ ] **Create the KV namespaces** and fill in `platforms/cf-worker/wrangler.toml`. Not the frozen namespace: see that file's warning.
 

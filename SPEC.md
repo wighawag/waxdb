@@ -237,7 +237,6 @@ Access-Control-Max-Age: 86400
 
 ```
 GET  /records/{namespace}/{owner}
-GET  /records/{namespace}/{owner}?since=<counter>
 HEAD /records/{namespace}/{owner}
 ```
 
@@ -256,7 +255,7 @@ A tombstone is also `200`, with an empty body and `Waxdb-Deleted: true`. It is a
 
 Absence is `404` with `Content-Type: application/json` and the body `{"found": false}`. There is no `error` field: absence is an answer, not a failure. The status code is forced by the body being the payload, which leaves nowhere else to say it.
 
-`If-None-Match` with a matching ETag returns `304` and no body. `?since=<counter>` is the same conditional as a query parameter, answering `304` when the stored counter is less than or equal to it, and it exists because `If-None-Match` is not a CORS-safelisted request header, so the idiomatic form costs a preflight on every poll and this one does not.
+`If-None-Match` with a matching ETag returns `304` and no body. It is the only conditional read, and it is the idiomatic one. An earlier draft carried a `?since=<counter>` query parameter beside it, on the belief that a non-safelisted request header costs a preflight on every poll; preflight results are cached per URL, so it does not, and the duplicate went with the reasoning that motivated it (DECISIONS.md #18).
 
 `HEAD` returns the headers with no body, which is the cheap way to poll for a counter change before deciding to transfer a payload. An implementation should answer it from a key listing rather than by reading the value, so a multi-megabyte record costs nothing to check.
 
