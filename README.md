@@ -11,9 +11,11 @@ A record is an opaque **payload of bytes** plus the secp256k1 signature that aut
 
 ## Status
 
-The protocol is specified. The implementation is not written: every route answers `not_implemented` in the error shape the spec defines. What exists is the platform skeleton, the storage seam and the two adapters, inherited from the predecessor.
+The protocol is specified and implemented. One contract suite runs against the core in-process, the worker on real workerd, and both Node backends, in both read modes.
 
 The protocol has no open questions. The last one, which hash covers the payload, was settled by measurement in `bench/` and recorded as DECISIONS.md #17.
+
+Not deployed: `platforms/cf-worker/wrangler.toml` still carries placeholder KV ids. See [TODO.md](TODO.md).
 
 ## Layout
 
@@ -45,7 +47,12 @@ pnpm dev:cf        # wrangler dev
 pnpm dev:node      # the CLI against a local store
 pnpm build
 pnpm run deploy    # note the `run`: `pnpm deploy` is a pnpm builtin
+
+pnpm --filter waxdb-server run vectors   # regenerate vectors.json
+cd bench && npm install && ./run.sh      # re-measure the hash decision
 ```
+
+[`vectors.json`](vectors.json) pins `(inputs -> message -> digest)` for every intent. It is what stops a client and the server drifting apart silently, since a change to the encoding that does not update it surfaces only as `signature_mismatch` in production.
 
 ## The predecessor
 

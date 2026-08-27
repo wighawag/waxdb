@@ -1,0 +1,181 @@
+{
+	"$comment": "Cross-implementation vectors for the waxdb signed message. See SPEC.md, \"Cross-implementation vectors\". Regenerate with `pnpm --filter waxdb-server run vectors`. A change to the encoding that does not update this file in the same commit surfaces only as signature_mismatch in production.",
+	"privateKey": "0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318",
+	"signer": "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23",
+	"hashes": {
+		"payload": "SHA-256",
+		"messageDigest": "keccak256, via EIP-191 personal_sign"
+	},
+	"vectors": [
+		{
+			"name": "store, minimal",
+			"intent": "store",
+			"inputs": {
+				"namespace": "app",
+				"owner": "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23",
+				"counter": "0",
+				"expected": "any",
+				"payload": "0x",
+				"payloadHash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+			},
+			"storageKey": "app/0x2c7536e3605d9c16a7a3d7b1898e529396a65c23",
+			"message": "waxdb store\nNamespace: app\nOwner: 0x2c7536e3605d9c16a7a3d7b1898e529396a65c23\nCounter: 0\nExpected: any\nData: 0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			"messageByteLength": 174,
+			"digest": "0x24b1b01157a2773acf56fe39edef353bd1710e126221cd151e0c36a876827d06",
+			"signature": "0x820b7bf53eacacbde17e3c9cdc5093b7a2f8f4a2ecbe44305a1b03b55814af1042156525de3132437568590649f75e6bd28de7c58e5c9745d310cd5ebd60592a1b",
+			"signer": "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23"
+		},
+		{
+			"name": "store, millisecond counter",
+			"intent": "store",
+			"inputs": {
+				"namespace": "my.app-name_v2",
+				"owner": "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23",
+				"counter": "1756290000000",
+				"expected": "any",
+				"payload": "0x68656c6c6f207761786462",
+				"payloadHash": "0xb5b61e26984a9753cd53161750bd8a5b3fe72a360ce90d61c5c2e54fe53cac8e"
+			},
+			"storageKey": "my.app-name_v2/0x2c7536e3605d9c16a7a3d7b1898e529396a65c23",
+			"message": "waxdb store\nNamespace: my.app-name_v2\nOwner: 0x2c7536e3605d9c16a7a3d7b1898e529396a65c23\nCounter: 1756290000000\nExpected: any\nData: 0xb5b61e26984a9753cd53161750bd8a5b3fe72a360ce90d61c5c2e54fe53cac8e",
+			"messageByteLength": 197,
+			"digest": "0xd7d8b861df879e5d6a89afd79844decd8888cde3e19910a55b0fb2fed2824069",
+			"signature": "0x31a5afbbba1bebae7f6289347bd48c9b253292c4dbeecd8cd34062927915b8fc1211ddc3e7fed24c523b2da59aa1ee3a2d3744595ae27299d1f087f6991fa8a51c",
+			"signer": "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23"
+		},
+		{
+			"name": "store, expected none",
+			"intent": "store",
+			"inputs": {
+				"namespace": "app.scope-1",
+				"owner": "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23",
+				"counter": "1",
+				"expected": "none",
+				"payload": "0x7b226669727374223a2270757368227d",
+				"payloadHash": "0x178ec95121351c1b7f999457f9becd6855228d5dbc5e68bc129de82e33937eb7"
+			},
+			"storageKey": "app.scope-1/0x2c7536e3605d9c16a7a3d7b1898e529396a65c23",
+			"message": "waxdb store\nNamespace: app.scope-1\nOwner: 0x2c7536e3605d9c16a7a3d7b1898e529396a65c23\nCounter: 1\nExpected: none\nData: 0x178ec95121351c1b7f999457f9becd6855228d5dbc5e68bc129de82e33937eb7",
+			"messageByteLength": 183,
+			"digest": "0x68cf02cf9f285ab08d6d49cfdd66f24c74335666f606203a367a76cca3a41431",
+			"signature": "0x31129580fedf8fc05393f53a86f8d902210571c35401305375b64e24c62627b24aa6319b90a715d7bbb1afccb95cd2fa94892fdb96036f0bfa27d79850a8a8db1c",
+			"signer": "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23"
+		},
+		{
+			"name": "store, expected an exact counter",
+			"intent": "store",
+			"inputs": {
+				"namespace": "app.scope-1",
+				"owner": "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23",
+				"counter": "1756290000001",
+				"expected": "1756290000000",
+				"payload": "0x636f6e646974696f6e616c",
+				"payloadHash": "0x6929adae851d8522fccccc1cd3059119748cc66eeb8168ce7e5e7c79b98d7d63"
+			},
+			"storageKey": "app.scope-1/0x2c7536e3605d9c16a7a3d7b1898e529396a65c23",
+			"message": "waxdb store\nNamespace: app.scope-1\nOwner: 0x2c7536e3605d9c16a7a3d7b1898e529396a65c23\nCounter: 1756290000001\nExpected: 1756290000000\nData: 0x6929adae851d8522fccccc1cd3059119748cc66eeb8168ce7e5e7c79b98d7d63",
+			"messageByteLength": 204,
+			"digest": "0x21073998042def4e95487b88563e1735bb3ea4802235f7512ac31ba8c83d9383",
+			"signature": "0xbf13c410f9d56b35e388afa5555ce6defc3f653cfd855cf720253afee01519ae05ace0a18109da180b2104b31670e805c59dfa3d9f2551fe40ff5866f5da70281c",
+			"signer": "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23"
+		},
+		{
+			"name": "store, every byte value",
+			"intent": "store",
+			"inputs": {
+				"namespace": "binary",
+				"owner": "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23",
+				"counter": "42",
+				"expected": "any",
+				"payload": "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
+				"payloadHash": "0x40aff2e9d2d8922e47afd4648e6967497158785fbd1da870e7110266bf944880"
+			},
+			"storageKey": "binary/0x2c7536e3605d9c16a7a3d7b1898e529396a65c23",
+			"message": "waxdb store\nNamespace: binary\nOwner: 0x2c7536e3605d9c16a7a3d7b1898e529396a65c23\nCounter: 42\nExpected: any\nData: 0x40aff2e9d2d8922e47afd4648e6967497158785fbd1da870e7110266bf944880",
+			"messageByteLength": 178,
+			"digest": "0x8084ab2cd1a7b75c6ee87f6b3a52d439fa2091ea788f85dc677876e3e562032b",
+			"signature": "0x434ea1954ca584fb98a035fc7e7253f12bd85f7dc2fea1b63195df8773f41f83791f02288034eaaafccb76552baa06bab9b1489eeb38c0657cc14d6959b72def1c",
+			"signer": "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23"
+		},
+		{
+			"name": "store, namespace using the whole charset",
+			"intent": "store",
+			"inputs": {
+				"namespace": "abcdefghijklmnopqrstuvwxyz0123456789._-",
+				"owner": "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23",
+				"counter": "7",
+				"expected": "any",
+				"payload": "0x63686172736574",
+				"payloadHash": "0x17a5b90572d13b7c65d12bc79c4a7cfcc4305e61928c1dbc28cb3923b341204d"
+			},
+			"storageKey": "abcdefghijklmnopqrstuvwxyz0123456789._-/0x2c7536e3605d9c16a7a3d7b1898e529396a65c23",
+			"message": "waxdb store\nNamespace: abcdefghijklmnopqrstuvwxyz0123456789._-\nOwner: 0x2c7536e3605d9c16a7a3d7b1898e529396a65c23\nCounter: 7\nExpected: any\nData: 0x17a5b90572d13b7c65d12bc79c4a7cfcc4305e61928c1dbc28cb3923b341204d",
+			"messageByteLength": 210,
+			"digest": "0x5dda4a3bd8cb2015066be2b750b1ec8b2fc401c0b322e6cd10f53f3b76b38fda",
+			"signature": "0x0e4f9deb1f6ba86bd2cbcfd5c52608d220def7f073c4d12e475cf7132259a8db1ad39e660784565d882cba13e1e8fd64d8f426d3f5990cdd5e777d0f47ac99601b",
+			"signer": "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23"
+		},
+		{
+			"name": "delete, minimal",
+			"intent": "delete",
+			"inputs": {
+				"namespace": "app",
+				"owner": "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23",
+				"counter": "1756290000002",
+				"expected": "any"
+			},
+			"storageKey": "app/0x2c7536e3605d9c16a7a3d7b1898e529396a65c23",
+			"message": "waxdb delete\nNamespace: app\nOwner: 0x2c7536e3605d9c16a7a3d7b1898e529396a65c23\nCounter: 1756290000002\nExpected: any",
+			"messageByteLength": 114,
+			"digest": "0x82ea0e30f9262c0878925f376f3aa05992ed60f0cc8a822d772c52211ca361ca",
+			"signature": "0xd2e5aca91134eca2d570f4881d8168eede8e81051745c9068c783abc774dc54d50d80420ad1f42a4611aa8df8d37f009be38bc2e0effa30b17ef0d09961caf5e1b",
+			"signer": "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23"
+		},
+		{
+			"name": "delete, expected an exact counter",
+			"intent": "delete",
+			"inputs": {
+				"namespace": "app.scope-1",
+				"owner": "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23",
+				"counter": "99",
+				"expected": "98"
+			},
+			"storageKey": "app.scope-1/0x2c7536e3605d9c16a7a3d7b1898e529396a65c23",
+			"message": "waxdb delete\nNamespace: app.scope-1\nOwner: 0x2c7536e3605d9c16a7a3d7b1898e529396a65c23\nCounter: 99\nExpected: 98",
+			"messageByteLength": 110,
+			"digest": "0x3ffd6e5be6f982bd2339ed90c192f5306948cf3fe0cbe4807d0dd2cda4920b72",
+			"signature": "0x2064a0c72a1e29dd15579029313df301af9e94fbcd74e469f663a86fca8595335968550c3da1225df690142e47d30e2f1d3dfff061db3cb2e878e19511c945561c",
+			"signer": "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23"
+		},
+		{
+			"name": "read token",
+			"intent": "read",
+			"inputs": {
+				"namespace": "app",
+				"owner": "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23",
+				"expires": "1756290000"
+			},
+			"storageKey": "app/0x2c7536e3605d9c16a7a3d7b1898e529396a65c23",
+			"message": "waxdb read\nNamespace: app\nOwner: 0x2c7536e3605d9c16a7a3d7b1898e529396a65c23\nExpires: 1756290000",
+			"messageByteLength": 95,
+			"digest": "0xc50588ec502ed48941cb56203d83825d8430c6b6169277f30af8e6d84171a74c",
+			"signature": "0x79eea16b509a457d1470ddcc9ad235f76bccb5d5d475d0442d3fd876982566893058140820564d16b49228f60d26ced721b2160d21458831a3b9e30c038af3101b",
+			"signer": "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23"
+		},
+		{
+			"name": "read token, expires zero",
+			"intent": "read",
+			"inputs": {
+				"namespace": "app",
+				"owner": "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23",
+				"expires": "0"
+			},
+			"storageKey": "app/0x2c7536e3605d9c16a7a3d7b1898e529396a65c23",
+			"message": "waxdb read\nNamespace: app\nOwner: 0x2c7536e3605d9c16a7a3d7b1898e529396a65c23\nExpires: 0",
+			"messageByteLength": 86,
+			"digest": "0xeb430317bdac525735f30dfb0bb5a84d41e53fbb84b4ebe33cd07d18fc89bab2",
+			"signature": "0x18b60a1bc1ca06c45cf857a97d6f8f704db0503dd2a6ff704575fb4307ca4bd82678934f33542e087f9459ab1dc0756be86428c1ecb1d932064760d742d5a3e41b",
+			"signer": "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23"
+		}
+	]
+}

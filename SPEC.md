@@ -27,7 +27,7 @@ Every one of these is a rejection rule, never a normalisation rule. A value that
 
 | field | form |
 | --- | --- |
-| `namespace` | `[a-z0-9._-]{1,256}`, not `.` or `..`, not starting with `.` |
+| `namespace` | `[a-z0-9._-]{1,255}`, not `.` or `..`, not starting with `.` |
 | `owner` | `0x` followed by 40 lowercase hex characters |
 | `counter` | `0` or `[1-9][0-9]*`. No leading zeros, no hex, no exponent |
 | `expected` | `any`, `none`, or a `counter` |
@@ -45,6 +45,7 @@ The `namespace` charset is deliberately narrow, and every restriction in it is p
 - **Lowercase only.** Every segment of the key is then lowercase, since `owner` already is. Without this, a case-sensitive store and a case-insensitive filesystem would disagree about whether `Conquest` and `conquest` are one record or two, and no amount of documentation would stop a human making the same mistake.
 - **No `:`**, which is illegal in filenames on Windows. It was in the predecessor's namespaces (`conquest-0xABC:0x8629…`) and nothing in waxdb depends on it. Use `.`, `-` or `_`.
 - **Never `.` or `..`, and never leading `.`**, which are path traversal in any file-backed store. Cloudflare KV has the same rule for its own keys.
+- **At most 255 bytes**, which is `NAME_MAX` on ext4, APFS, tmpfs and NTFS alike. A namespace is a single path component in a file-backed store, so 256 is the first length that Cloudflare accepts and a local store rejects with `ENAMETOOLONG`. That divergence is precisely what the rest of this list exists to prevent, so the limit is one byte lower than it looks like it should be.
 
 Together these make every key a valid, unambiguous path on every filesystem as well as a valid KV key, which is what lets a local backend store a payload as an ordinary file.
 
@@ -53,10 +54,14 @@ Together these make every key a valid, unambiguous path on every filesystem as w
 ```
 key      = `${namespace}/${owner}`
 value    = the payload bytes, verbatim
-metadata = {"counter": "…", "signature": "0x…", "deleted": false}
+metadata = {"counter": "…", "signature": "0x…", "deleted": false, "dataHash": "0x…"}
 ```
 
-Because `/` appears in no field, the key is exactly two `/`-separated segments and decomposes uniquely. Maximum key length is 256 + 1 + 42 = 299 bytes, inside Cloudflare KV's 512-byte limit. The metadata serialises to about 200 bytes, inside KV's 1024-byte limit.
+`dataHash` is the `SHA-256` from the `Data:` line. It is **stored rather than recomputed**, because both paths that need it forbid recomputing it: a read streams and is never hashed, and `head` must never touch the payload. It cannot be derived from the rest either, since a signature yields a public key given a digest and never the reverse. Storing it is what makes the listing below genuinely describe a record: without it the stored signature cannot be checked without transferring the payload.
+
+It is present exactly when `deleted` is false. A tombstone is authorised by the `waxdb delete` message, which has no `Data:` line, so it has no signed payload hash and storing one would mean inventing a hash nobody signed.
+
+Because `/` appears in no field, the key is exactly two `/`-separated segments and decomposes uniquely. Maximum key length is 255 + 1 + 42 = 298 bytes, inside Cloudflare KV's 512-byte limit. The metadata serialises to about 280 bytes, inside KV's 1024-byte limit.
 
 The value is the payload and nothing else: no envelope, no encoding, no escaping. `namespace` and `owner` live in the key and `counter` and `signature` live in the metadata, so a record is fully described by a key-and-metadata listing without reading a single value.
 
@@ -67,7 +72,13 @@ A **tombstone** is a record with an empty value and `deleted: true`. It carries 
 The core reaches storage through one interface, and every platform supplies it. It is asymmetric because the protocol is:
 
 ```ts
-type Meta = {counter: string; signature: string; deleted: boolean};
+type Meta = {
+  counter: string;
+  signature: string;
+  deleted: boolean;
+  /** SHA-256 of the payload. Present exactly when `deleted` is false */
+  dataHash?: string;
+};
 
 interface Storage {
   head(key: string): Promise<Meta | null>;
@@ -76,6 +87,8 @@ interface Storage {
   delete(key: string): Promise<void>;
 }
 ```
+
+`delete` is never called by the protocol, since a `DELETE` request writes a tombstone through `put`. It exists for operators and platform teardown, and an adapter must still implement it correctly.
 
 Reads hand back a stream because nothing inspects them. Writes take bytes because verification has to see every one of them before anything is stored. `ReadableStream` is a web standard available in Workers and in Node, so this does not put a platform API in the core.
 
@@ -329,7 +342,7 @@ The server must map that exception to `rate_limited` rather than letting it beco
 
 | | |
 | --- | --- |
-| `namespace` | 256 bytes |
+| `namespace` | 255 bytes, which is `NAME_MAX` |
 | read authentication | deployment policy, on unless `PUBLIC_READS` is set |
 | read token lifetime | deployment policy, `MAX_READ_TOKEN_SECONDS`, default 3600 |
 | payload on write | deployment policy, default 10 MiB. Not a protocol constant |

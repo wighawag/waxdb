@@ -137,6 +137,8 @@ Purpose-built is two small backends. A `Map` for `:memory:`, and a directory whe
 
 This is what drove the namespace charset to lowercase, `:`-free, and never `.` or `..`. A file-backed store makes those latent problems real: `:` is illegal in Windows filenames, `.` and `..` are path traversal, and a case-sensitive key space on a case-insensitive filesystem means two records the server thinks are distinct become one. Cloudflare KV already forbids keys of `.` and `..` for its own reasons, so the rule was half there.
 
+It also set the namespace length, and this one was found by the contract suite rather than by reasoning. The limit was 256 bytes; a namespace is a single path component in this backend; `NAME_MAX` is **255** on ext4, APFS, tmpfs and NTFS alike. So a 256-byte namespace was a write Cloudflare accepted and the local store rejected with `ENAMETOOLONG`, which is exactly the class of divergence the charset rules exist to prevent, sitting one byte outside them. The limit is now 255. It cost nothing to change because the store is empty, which is decision 15's whole argument for setting limits early.
+
 **Costs.** Roughly a hundred lines per backend that we now own and test. The marginal test cost is near zero because the contract suite already runs against every platform, which is what the seam was built for. SQLite was considered and declined: it would bring real atomicity, and therefore an exact `Expected` where Cloudflare can only manage best effort, but a native dependency is a heavy thing to put inside a CLI whose entire job is to be runnable offline with `npx`.
 
 ## 15. Limits are set now, while they are free
