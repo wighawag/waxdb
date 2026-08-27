@@ -9,12 +9,12 @@
 		"waxdb-server": "workspace:*"
 	},
 	"devDependencies": {
-		"@cloudflare/vitest-pool-workers": "^0.5.36",
-		"@cloudflare/workers-types": "^4.20241205.0",
+		"@cloudflare/vitest-pool-workers": "^0.22.0",
+		"@cloudflare/workers-types": "^5.20260826.1",
 		"prettier": "^3.4.2",
 		"typescript": "^5.6.3",
-		"vitest": "^2.1.8",
-		"wrangler": "^3.95.0"
+		"vitest": "^4.1.11",
+		"wrangler": "^4.126.0"
 	},
 	"scripts": {
 		"dev": "wrangler dev",
