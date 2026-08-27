@@ -21,9 +21,10 @@
     "format:check": "pnpm -r run format:check",
     "changeset": "changeset",
     "changeset:check": "changeset status --since=main",
-    "prepublishOnly": "pnpm format:check && pnpm test",
+    "prepublishOnly": "pnpm check:packaging && pnpm format:check && pnpm test",
     "release": "pnpm prepublishOnly && git push --all && pnpm changeset publish && git push --tags",
-    "release:ci": "pnpm prepublishOnly && pnpm changeset publish"
+    "release:ci": "pnpm prepublishOnly && pnpm changeset publish",
+    "check:packaging": "node scripts/check-packaging.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "^3.0.1",

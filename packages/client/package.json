@@ -3,6 +3,11 @@
 	"version": "0.1.0",
 	"description": "MIT client for waxdb: an authenticated key-value store for ethereum addresses",
 	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/wighawag/waxdb.git",
+		"directory": "packages/client"
+	},
 	"publishConfig": {
 		"access": "public"
 	},

@@ -3,6 +3,11 @@
 	"version": "0.2.0",
 	"description": "run waxdb locally, offline: an authenticated key-value store for ethereum addresses",
 	"license": "AGPL-3.0-only",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/wighawag/waxdb.git",
+		"directory": "platforms/nodejs"
+	},
 	"publishConfig": {
 		"access": "public"
 	},

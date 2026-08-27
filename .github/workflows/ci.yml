@@ -38,6 +38,12 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # Cheap, and it is the check a failed release taught us to run early:
+      # npm provenance rejects a publish whose repository.url does not match,
+      # and nothing else in the build has an opinion about that field.
+      - name: Packaging invariants
+        run: pnpm check:packaging
+
       - name: Format
         run: pnpm format:check
 
