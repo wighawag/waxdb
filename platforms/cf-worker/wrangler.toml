@@ -2,14 +2,7 @@ name = "waxdb"
 main = "src/worker.ts"
 compatibility_date = "2026-08-01"
 
-# A NEW namespace. waxdb shares no storage with the frozen secp256k1-db
-# deployment (DECISIONS.md #1), so do not paste that one's id here.
-#
-#   npx wrangler kv namespace create RECORDS
-#   npx wrangler kv namespace create RECORDS --preview
-#
-# and put the ids below before the first deploy.
 [[kv_namespaces]]
 binding = "RECORDS"
-id = "TODO-create-before-first-deploy"
-preview_id = "TODO-create-before-first-deploy"
+id = "8bd9b009ec4743ff98748cdccc0fca0c"
+preview_id = "59f0fe877f7e4f23bcdb082790a63525"
