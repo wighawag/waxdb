@@ -1,7 +1,7 @@
 /**
  * The client against a real server.
  *
- * `waxdb-server` is a devDependency here, used only to stand a server up in
+ * `@waxdb/server` is a devDependency here, used only to stand a server up in
  * this process. Nothing in the published package imports it, so the MIT
  * distribution contains no AGPL code: testing against software is not
  * deriving from it.
@@ -13,7 +13,7 @@
  */
 import {Wallet} from '@ethersproject/wallet';
 import {beforeEach, describe, expect, it} from 'vitest';
-import {createServer, type Env, type Meta, type Storage} from 'waxdb-server';
+import {createServer, type Env, type Meta, type Storage} from '@waxdb/server';
 import {WaxdbClient} from '../src/client.js';
 import {WaxdbError} from '../src/errors.js';
 

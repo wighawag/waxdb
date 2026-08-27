@@ -7,7 +7,7 @@ import {
 	type Meta,
 	type Record,
 	type Storage,
-} from 'waxdb-server';
+} from '@waxdb/server';
 
 /**
  * The local backends (DECISIONS.md #14).

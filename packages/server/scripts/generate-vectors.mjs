@@ -1,7 +1,7 @@
 /**
  * Regenerates the repo-root `vectors.json`.
  *
- *   pnpm --filter waxdb-server run vectors
+ *   pnpm --filter @waxdb/server run vectors
  *
  * The vectors pin `(inputs -> message -> digest)`, which is the only thing
  * keeping a client and the server in agreement about the encoding, and it has
@@ -182,7 +182,7 @@ const document = {
 	$comment:
 		'Cross-implementation vectors for the waxdb signed message. See SPEC.md, ' +
 		'"Cross-implementation vectors". Regenerate with `pnpm --filter ' +
-		'waxdb-server run vectors`. A change to the encoding that does not update ' +
+		'@waxdb/server run vectors`. A change to the encoding that does not update ' +
 		'this file in the same commit surfaces only as signature_mismatch in ' +
 		'production.',
 	privateKey: PRIVATE_KEY,

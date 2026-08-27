@@ -8,7 +8,7 @@
  * either side that does not update this file surfaces here rather than as
  * `signature_mismatch` in somebody's production.
  *
- * Note what is *not* imported below: anything from `waxdb-server`.
+ * Note what is *not* imported below: anything from `@waxdb/server`.
  */
 import {describe, expect, it} from 'vitest';
 import vectorsDocument from '../../../vectors.json' with {type: 'json'};

@@ -1,7 +1,7 @@
 /**
  * The licence boundary, enforced rather than documented.
  *
- * This package is MIT and `waxdb-server` is AGPL-3.0-only. If anything under
+ * This package is MIT and `@waxdb/server` is AGPL-3.0-only. If anything under
  * `src/` ever imports the server, the published artifact becomes a derivative
  * of AGPL code and every consumer of this client inherits that obligation,
  * silently, from a one-line import that would look entirely reasonable in
@@ -44,7 +44,7 @@ describe('MIT boundary', () => {
 
 	it('never imports the AGPL server from published source', () => {
 		const offenders = sourceFiles(srcDir).filter((file) =>
-			/from\s+['"]waxdb-server/.test(fs.readFileSync(file, 'utf8')),
+			/from\s+['"]@waxdb\/server/.test(fs.readFileSync(file, 'utf8')),
 		);
 		expect(
 			offenders.map((f) => path.relative(packageDir, f)),

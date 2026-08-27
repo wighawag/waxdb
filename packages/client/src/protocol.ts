@@ -1,7 +1,7 @@
 /**
  * The wire format, implemented independently of the server.
  *
- * **This duplicates `waxdb-server` on purpose, and the duplication is
+ * **This duplicates `@waxdb/server` on purpose, and the duplication is
  * load-bearing twice over.**
  *
  * Licensing: this package is MIT and the server is AGPL-3.0-only, so importing

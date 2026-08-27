@@ -4,9 +4,11 @@ Ordered. [SPEC.md](SPEC.md) is the target, [DECISIONS.md](DECISIONS.md) is why.
 
 ## Next
 
-- [ ] **Publish, server first.** `waxdb` depends on `waxdb-server` via `workspace:*`, which pnpm rewrites to a real version at publish time, so publishing the CLI first leaves `npm i waxdb` unresolvable. `waxdb-client` depends on nothing and can go whenever. Both server-side names are held by `0.0.0` placeholders.
+- [ ] **Bootstrap the two new npm names.** Releases go through changesets and npm Trusted Publishing (OIDC, no token) via `.github/workflows/release.yml`, but that setting lives *on a package*, so `@waxdb/server` and `@waxdb/client` have to exist before they can hold it. Publish each once by hand, then register the trusted publisher for all three. [PUBLISHING.md](PUBLISHING.md) has the steps. `waxdb` itself is already on npm at `0.0.0`.
 
-- [ ] **Move the consumers over.** `synqable`'s adapter (`sync/adapters/secp256k1-db`) speaks the old JSON-RPC protocol and needs a waxdb sibling. `waxdb-client` is the replacement and its `Signer` is structural, so `Secp256k1Signer` satisfies it unchanged: waxdb kept `signMessage(string)`.
+  Publish order needs no thought once that is done: `waxdb` depends on `@waxdb/server` through `workspace:*`, and changesets publishes in dependency order.
+
+- [ ] **Move the consumers over.** `synqable`'s adapter (`sync/adapters/secp256k1-db`) speaks the old JSON-RPC protocol and needs a waxdb sibling. `@waxdb/client` is the replacement and its `Signer` is structural, so `Secp256k1Signer` satisfies it unchanged: waxdb kept `signMessage(string)`.
 
 - [ ] **Compression in the consumer.** `jolly-roger`'s serializer is plain `JSON.stringify`; `stratagems` compresses before encrypting. The new consumer should do the same, and it matters more than any server-side limit (DECISIONS.md #13).
 

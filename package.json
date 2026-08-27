@@ -4,14 +4,29 @@
   "private": true,
   "license": "AGPL-3.0-only",
   "type": "module",
+  "packageManager": "pnpm@11.15.1",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wighawag/waxdb.git"
+  },
   "scripts": {
+    "preinstall": "npx only-allow pnpm",
     "build": "pnpm -r run build",
     "test": "pnpm run build && pnpm -r run test",
-    "test:live": "pnpm --filter waxdb-server run test:live",
-    "dev:cf": "pnpm --filter waxdb-cf-worker run dev",
+    "test:live": "pnpm --filter @waxdb/server run test:live",
+    "dev:cf": "pnpm --filter @waxdb/cf-worker run dev",
     "dev:node": "pnpm --filter waxdb run dev",
-    "deploy": "pnpm run build && pnpm --filter waxdb-cf-worker run deploy",
+    "deploy": "pnpm run build && pnpm --filter @waxdb/cf-worker run deploy",
     "format": "pnpm -r run format",
-    "format:check": "pnpm -r run format:check"
+    "format:check": "pnpm -r run format:check",
+    "changeset": "changeset",
+    "changeset:check": "changeset status --since=main",
+    "prepublishOnly": "pnpm format:check && pnpm test",
+    "release": "pnpm prepublishOnly && git push --all && pnpm changeset publish && git push --tags",
+    "release:ci": "pnpm prepublishOnly && pnpm changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^3.0.1",
+    "prettier": "^3.9.6"
   }
 }

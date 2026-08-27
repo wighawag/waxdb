@@ -3,7 +3,7 @@ import {serve} from '@hono/node-server';
 import {Command} from 'commander';
 import fs from 'node:fs';
 import path from 'node:path';
-import {createServer, type Env} from 'waxdb-server';
+import {createServer, type Env} from '@waxdb/server';
 import {createStorage} from './storage.js';
 
 const __dirname = import.meta.dirname;

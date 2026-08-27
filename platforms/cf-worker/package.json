@@ -1,12 +1,12 @@
 {
-	"name": "waxdb-cf-worker",
+	"name": "@waxdb/cf-worker",
 	"version": "0.0.1",
 	"description": "Cloudflare Workers platform for waxdb",
 	"license": "AGPL-3.0-only",
 	"private": true,
 	"type": "module",
 	"dependencies": {
-		"waxdb-server": "workspace:*"
+		"@waxdb/server": "workspace:*"
 	},
 	"devDependencies": {
 		"@cloudflare/vitest-pool-workers": "^0.22.0",

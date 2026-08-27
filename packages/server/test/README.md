@@ -27,7 +27,7 @@ Each runs twice, once with authenticated reads and once with `PUBLIC_READS`, bec
 
 ```bash
 pnpm test                 # from the repo root: every harness
-pnpm --filter waxdb-server run vectors    # regenerate vectors.json
+pnpm --filter @waxdb/server run vectors    # regenerate vectors.json
 
 LIVE_URL=https://… pnpm test:live
 ```

@@ -1,5 +1,5 @@
 {
-	"name": "waxdb-client",
+	"name": "@waxdb/client",
 	"version": "0.0.1",
 	"description": "MIT client for waxdb: an authenticated key-value store for ethereum addresses",
 	"license": "MIT",
@@ -27,7 +27,7 @@
 		"prettier": "^3.4.2",
 		"typescript": "^5.6.3",
 		"vitest": "^4.0.0",
-		"waxdb-server": "workspace:*"
+		"@waxdb/server": "workspace:*"
 	},
 	"scripts": {
 		"build": "tsc --project tsconfig.json",

@@ -3,7 +3,7 @@ import {
 	type Meta,
 	type Record,
 	type Storage,
-} from 'waxdb-server';
+} from '@waxdb/server';
 
 /**
  * Cloudflare KV adapter (SPEC.md, "The storage seam").

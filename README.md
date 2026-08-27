@@ -49,7 +49,7 @@ pnpm dev:node      # the CLI against a local store
 pnpm build
 pnpm run deploy    # note the `run`: `pnpm deploy` is a pnpm builtin
 
-pnpm --filter waxdb-server run vectors   # regenerate vectors.json
+pnpm --filter @waxdb/server run vectors   # regenerate vectors.json
 cd bench && npm install && ./run.sh      # re-measure the hash decision
 ```
 
@@ -62,7 +62,7 @@ waxdb replaces [etherplay/secp256k1-db](https://github.com/etherplay/secp256k1-d
 ## Using it from an app
 
 ```bash
-npm i waxdb-client
+npm i @waxdb/client
 ```
 
 ```ts
@@ -72,6 +72,10 @@ const read = await client.get();
 ```
 
 See [packages/client](packages/client/README.md). It carries its own implementation of the wire format rather than importing the server's, and `vectors.json` is what holds the two to the same answer.
+
+## Releasing
+
+Changesets plus npm Trusted Publishing: add a changeset to your PR, merge, then merge the "Version Packages" PR the release workflow opens. There is no `NPM_TOKEN`. See [PUBLISHING.md](PUBLISHING.md).
 
 ## License
 

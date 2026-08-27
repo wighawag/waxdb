@@ -1,0 +1,76 @@
+name: ci
+
+# Runs on every PR and every push to main. The release workflow re-runs all of
+# this before publishing, so a merge cannot ship something a PR never checked,
+# but finding out here is considerably cheaper.
+#
+# The live conformance suite is deliberately NOT here. It writes to a real
+# deployment and spends real KV quota, so it stays a deliberate act:
+#   LIVE_URL=… pnpm test:live
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Format
+        run: pnpm format:check
+
+      # Builds, then runs the contract against the in-process server, the
+      # worker on real workerd, both Node backends, and the CLI across a
+      # restart. Plus vectors.json, checked from both the server and the
+      # independent client implementation.
+      - name: Test
+        run: pnpm test
+
+  changeset:
+    # Advisory: a PR touching a published package usually wants a changeset, but
+    # plenty of PRs legitimately do not (docs, CI, tests). Reported, not enforced.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Is there a changeset?
+        run: pnpm changeset:check

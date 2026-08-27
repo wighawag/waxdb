@@ -1,4 +1,4 @@
-import {createServer} from 'waxdb-server';
+import {createServer} from '@waxdb/server';
 import type {CloudflareEnv} from './env.js';
 import {KVStorage} from './storage.js';
 

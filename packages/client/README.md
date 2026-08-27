@@ -1,17 +1,17 @@
-# waxdb-client
+# @waxdb/client
 
 The client for [waxdb](../../README.md): an authenticated key-value store for ethereum addresses.
 
 **MIT, unlike the rest of this repository, which is AGPL-3.0-only.** A client library that cannot be embedded freely is not much of a client library. See [DECISIONS.md #20](../../DECISIONS.md).
 
 ```bash
-npm i waxdb-client
+npm i @waxdb/client
 ```
 
 ## Using it
 
 ```ts
-import {WaxdbClient} from 'waxdb-client';
+import {WaxdbClient} from '@waxdb/client';
 import {Wallet} from 'ethers';
 
 const client = new WaxdbClient({
@@ -83,7 +83,7 @@ new WaxdbClient({...options, sha256: async (bytes) => '0x…'});
 
 ## Why this duplicates the server
 
-`src/protocol.ts` implements the wire format again rather than importing `waxdb-server`, for two reasons that happen to point the same way.
+`src/protocol.ts` implements the wire format again rather than importing `@waxdb/server`, for two reasons that happen to point the same way.
 
 The licence forbids it: importing AGPL code into an MIT package would push the AGPL onto every consumer.
 

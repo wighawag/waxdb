@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {afterAll} from 'vitest';
-import {createServer, type Env} from 'waxdb-server';
+import {createServer, type Env} from '@waxdb/server';
 import {runContractTests} from '../../../packages/server/test/contract/contract.js';
 import type {ContractHarness} from '../../../packages/server/test/contract/harness.js';
 import {createStorage} from '../src/storage.js';

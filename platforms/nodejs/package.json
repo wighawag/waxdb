@@ -17,7 +17,7 @@
 	"dependencies": {
 		"@hono/node-server": "^1.13.8",
 		"commander": "^13.1.0",
-		"waxdb-server": "workspace:*"
+		"@waxdb/server": "workspace:*"
 	},
 	"devDependencies": {
 		"@ethersproject/wallet": "^5.0.0",
