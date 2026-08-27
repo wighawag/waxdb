@@ -35,6 +35,10 @@ if (!url) {
 		maxPayloadBytes: Number(
 			process.env.LIVE_MAX_PAYLOAD_BYTES ?? 10 * 1024 * 1024,
 		),
+		// Real Cloudflare KV, unlike miniflare's, is eventually consistent. This
+		// is the only harness where that is true, and declaring it is what lets
+		// the shared contract distinguish a protocol failure from propagation.
+		eventuallyConsistent: true,
 		async fetch(init) {
 			return fetch(`${base}${init.path}`, {
 				method: init.method,

@@ -222,6 +222,33 @@ With the premise gone, the duplicate has to argue for itself, and it cannot:
 
 The reason this is a comfortable decision rather than a finely balanced one is that **it is reversible for free**. `?since` is not part of the signed message, so re-adding it later is additive and needs no format change, which is true of almost nothing else here. Where a decision can be revisited at no cost, prefer the smaller surface.
 
+## 19. `head` reads the value and throws it away, because `list` lies
+
+**Why.** SPEC.md told the Cloudflare adapter to answer `head` with `list({prefix: key, limit: 1})`. The reasoning was sound and the result was wrong: a key listing returns metadata without values, so it looked like the way to check a counter without transferring a payload.
+
+`list` on Cloudflare KV is served from a different index than `get`, and it lags it by a lot. Measured against a live deployment, through the real worker:
+
+| | first observed a fresh write |
+| --- | --- |
+| `get` (`getWithMetadata`) | **507 ms** |
+| `list` | **31,567 ms** |
+
+Eventual consistency was expected and is written into decision 8. A **sixty-fold** gap between two reads of the same key was not, and it matters far more than a slow read normally would, because `head` is not just how `HEAD` is served. It is what the write path uses to enforce the counter rule and the precondition. For roughly half a minute after every write the server believed the record did not exist, and in that window:
+
+- the counter was not enforced at all, so an older captured write could be replayed
+- `Expected: none` succeeded against a record that already existed
+- a tombstone did not hold its high-water mark, which is the exact replay hole decision 7 exists to close
+
+The counter is the only replay defence in the protocol. A thirty second hole in it is a protocol failure, not a staleness nuisance.
+
+The fix is to ask for the value and discard it: `getWithMetadata(key, {type: "stream"})`, then cancel the stream without reading it. The payload never enters the isolate, so the rule that `head` must not read the payload still holds in the sense that matters, which was always about transfer rather than about which API was called.
+
+**Costs.** A KV read operation where there used to be a list operation, on every write and every `HEAD` and every conditional read. That is a real billing difference and it is the right trade: the previous version was cheaper because it was not doing the job. The rule in SPEC.md is now phrased as a prohibition, since "use a listing" is the obvious optimisation and someone will reach for it again.
+
+**How this was found, which is the part worth keeping.** No local test could have caught it. Miniflare's KV is immediately consistent, so all 163 assertions passed on workerd exactly as they passed in-process and on both Node backends. It took the live conformance suite, run against a real deployment, and it showed up as ten failures whose only common factor was that they were the only three call sites reaching `Storage.head`. A local test suite that passes on a simulator is evidence about the simulator.
+
+The contract now also lets a harness declare itself eventually consistent, in which case seeding a record waits until the server can observe it. That is not a workaround: it removes the ambiguity between "the server failed to enforce a rule" and "the server had not seen the record yet", which are very different bugs that look identical from outside.
+
 ## The frozen predecessor
 
 `etherplay/secp256k1-db`, archived. Its deployment is still running and still serving apps that cannot be rebuilt.

@@ -94,11 +94,13 @@ Reads hand back a stream because nothing inspects them. Writes take bytes becaus
 
 **`head` is not an optimisation, it is a rule: the write path must never read the payload.** It needs the counter and the deleted flag to check monotonicity and the precondition, and fetching a multi-megabyte value to compare a number, on every single write, is the difference between a cheap check and a transfer. The `HEAD` verb uses the same call.
 
+**Do not implement `head` with a key listing.** An earlier version of this document recommended exactly that, on Cloudflare, because a listing returns metadata without values and therefore looked free. It is not free, it is wrong: `list` is served from a different index than `get` and lags it badly. Measured against a live deployment, a freshly written record was visible to `get` after 507 ms and to `list` only after 31.5 seconds, and for that whole window the server believed the record did not exist. Since `head` is what enforces the counter rule, that is a half-minute hole in the protocol's only replay defence. Ask for the value and discard it unread instead: the payload still never enters the isolate. DECISIONS.md #19.
+
 How each platform satisfies it:
 
 | | Cloudflare | Node |
 | --- | --- | --- |
-| `head` | `list({prefix: key, limit: 1})`, metadata without values | read the sidecar |
+| `head` | `getWithMetadata(key, {type: "stream"})`, stream cancelled unread | read the sidecar |
 | `get` | `getWithMetadata(key, {type: "stream"})` | `createReadStream` plus the sidecar |
 | `put` | `put(key, bytes, {metadata})` | write the payload file, then the sidecar |
 
@@ -165,6 +167,8 @@ Signature malleability is not rejected. `(r, s, v)` and `(r, -s, v')` recover th
 1. If no record exists, any `counter` is acceptable, including `0`.
 2. If a record exists, `counter` must be strictly greater than the stored one. A tombstone is a record, so a delete raises the bar for everything after it.
 3. `counter` must not exceed the server's clock, in milliseconds, plus **T = 60000**.
+
+**Rule 2 is only as strong as the store's consistency, and on Cloudflare KV that is not absolute.** The check is a read followed by a write with no atomicity between them, so it enforces "strictly greater than what this server could see", not "than what was last written". On an eventually consistent store a write issued from another region inside the propagation window may not be visible yet, and a lower counter can therefore land. This is the same limitation `Expected` carries and it is stated here too because the counter is the replay defence: a captured write replayed inside that window can be accepted. It is bounded, it repeats data the holder of that signature already had, and decision 2 makes the next sync correct it. Choosing a store with compare-and-swap is what would close it.
 
 Rule 3 has two meanings and they are the same number:
 
@@ -257,7 +261,7 @@ Absence is `404` with `Content-Type: application/json` and the body `{"found": f
 
 `If-None-Match` with a matching ETag returns `304` and no body. It is the only conditional read, and it is the idiomatic one. An earlier draft carried a `?since=<counter>` query parameter beside it, on the belief that a non-safelisted request header costs a preflight on every poll; preflight results are cached per URL, so it does not, and the duplicate went with the reasoning that motivated it (DECISIONS.md #18).
 
-`HEAD` returns the headers with no body, which is the cheap way to poll for a counter change before deciding to transfer a payload. An implementation should answer it from a key listing rather than by reading the value, so a multi-megabyte record costs nothing to check.
+`HEAD` returns the headers with no body, which is the cheap way to poll for a counter change before deciding to transfer a payload. It goes through the same `head` call as the write path, so a multi-megabyte record costs no transfer to check. Note the warning against answering it from a key listing, above.
 
 **Reads stream.** The server pipes the stored value straight to the response and never buffers it, so read size is bounded only by the store.
 

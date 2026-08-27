@@ -83,6 +83,20 @@ export function runContractTests(harness: ContractHarness) {
 			});
 		}
 
+		/**
+		 * Writes a record and, on an eventually-consistent store, waits until the
+		 * server can actually see it.
+		 *
+		 * The wait polls `HEAD`, because `HEAD` and the write path's counter check
+		 * go through the same `Storage.head` call. Waiting on `GET` would prove
+		 * nothing about what a subsequent write will observe, and that exact gap
+		 * is the bug this suite found against live KV.
+		 *
+		 * This weakens no assertion. It removes the ambiguity between "the server
+		 * failed to enforce the counter rule" and "the server had not seen the
+		 * record yet", which are very different bugs that look identical from
+		 * outside.
+		 */
 		async function seed(
 			namespace: string,
 			payload: Uint8Array,
@@ -90,6 +104,30 @@ export function runContractTests(harness: ContractHarness) {
 		) {
 			const response = await put(namespace, {counter, payload});
 			expect(response.status, await response.text()).toBe(200);
+			if (harness.eventuallyConsistent) {
+				await waitUntilVisible(namespace, counter);
+			}
+		}
+
+		async function waitUntilVisible(namespace: string, counter: string) {
+			const deadline = Date.now() + 90_000;
+			let last = 0;
+			while (Date.now() < deadline) {
+				const response = await head(namespace);
+				last = response.status;
+				if (
+					response.status === 200 &&
+					response.headers.get('waxdb-counter') === counter
+				) {
+					return;
+				}
+				await new Promise((r) => setTimeout(r, 500));
+			}
+			throw new Error(
+				`${namespace} at counter ${counter} was still invisible to HEAD after ` +
+					`90s (last status ${last}). That is not eventual consistency, that is ` +
+					`a broken head path.`,
+			);
 		}
 
 		// ------------------------------------------------------------------

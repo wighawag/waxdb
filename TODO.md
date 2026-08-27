@@ -16,9 +16,13 @@ Ordered. [SPEC.md](SPEC.md) is the target, [DECISIONS.md](DECISIONS.md) is why.
 
 ## Next
 
-- [ ] **Create the KV namespaces** and fill in `platforms/cf-worker/wrangler.toml`. Not the frozen namespace: see that file's warning.
+- [x] **Create the KV namespaces** and deploy. Live at `waxdb.rim.workers.dev`.
+
+- [ ] **Redeploy with the `head` fix and re-run the live suite.** `head` was answered from `kv.list`, which lags `kv.get` by ~30 seconds on real KV, so the counter rule went unenforced for that window (DECISIONS.md #19). Fixed and green locally, but only a live run proves it: `LIVE_URL=https://waxdb.rim.workers.dev pnpm test:live`.
 
 - [ ] **Bump `@cloudflare/vitest-pool-workers`.** It pins an older workerd, so the worker contract currently runs against compatibility date `2024-12-30` while `wrangler.toml` asks for `2026-08-01`, and miniflare warns about the gap on every run. The tests pass on both, but they are not verifying the runtime a deploy would get.
+
+- [ ] **Decide whether miniflare's KV is worth simulating.** Its local KV is immediately consistent where the real one is not, which is what let the `list`/`get` divergence through 163 green assertions. An adapter-level test that injects propagation delay would catch that class locally, at the cost of a fake whose fidelity is itself unverifiable. The live suite catches it for real, so this is a question of how early rather than whether.
 
 - [ ] **Publish, server first.** `waxdb` depends on `waxdb-server` via `workspace:*`, which pnpm rewrites to a real version at publish time, so publishing the CLI first leaves `npm i waxdb` unresolvable. Both names are held by `0.0.0` placeholders.
 
