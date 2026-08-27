@@ -32,7 +32,7 @@ Every one of these is a rejection rule, never a normalisation rule. A value that
 | `counter` | `0` or `[1-9][0-9]*`. No leading zeros, no hex, no exponent |
 | `expected` | `any`, `none`, or a `counter` |
 | `expires` | unix **seconds**, `0` or `[1-9][0-9]*`. No leading zeros |
-| `payloadHash` | `0x` followed by 64 lowercase hex characters, `keccak256` of the payload bytes |
+| `payloadHash` | `0x` followed by 64 lowercase hex characters, `SHA-256` of the payload bytes |
 | `signature` | `0x` followed by 130 hex characters |
 
 The `owner` may be sent in any case in a URL and is lowercased before use. The signed message always uses the lowercase form, so a client that signs a checksummed spelling fails verification rather than writing something it did not intend.
@@ -142,6 +142,8 @@ digest = keccak256(0x19 || "Ethereum Signed Message:\n" || byteLength(message) |
 `byteLength` is the UTF-8 byte length in decimal ASCII. The message is ASCII by construction so this equals the character count, but implementations should still compute bytes so the invariant survives any future charset change.
 
 The signer is recovered from the digest and the signature and must equal `owner`, compared case-insensitively.
+
+**Two hashes, and they are not interchangeable.** The message digest is `keccak256`, because EIP-191 says so and there is no choice. The payload hash on the `Data:` line is `SHA-256`, because it is the only hash in the protocol whose cost scales with anything. The message is a few hundred bytes, so keccak over it is free; the payload is up to the deployment's cap, and SHA-256 is native in Workers, browsers and Node while keccak is not. Measured in a Worker, hashing 10 MiB costs 5.1 ms with `crypto.subtle.digest("SHA-256", …)` against 179 ms with the fastest keccak an implementation can actually install. That is the whole reason for the second primitive, and DECISIONS.md #17 has the numbers.
 
 Signature malleability is not rejected. `(r, s, v)` and `(r, -s, v')` recover the same address for the same message, so both authorise the same write, and the record keeps whichever form was submitted.
 
@@ -342,7 +344,7 @@ Because the payload is stored verbatim, the platform's 25 MiB value limit applie
 
 The default of 10 MiB is set by the Worker rather than the store. A write holds the payload once while hashing and verifying it, so memory is roughly one to two times the payload against a 128 MB isolate shared across the concurrent requests it is serving.
 
-**CPU is what decides which plan a deployment can run on**, and it is overwhelmingly a write cost. A read is streamed and never hashed, so it is cheap at any size; verifying a read token adds one signature recovery, which is constant and small but not free on a 10 ms budget. A write must hash the whole payload before it can verify anything, so its cost is linear in payload size:
+**CPU is what decides which plan a deployment can run on**, and it is overwhelmingly a write cost. A read is streamed and never hashed, so it is cheap at any size; verifying a read token adds one signature recovery, which is constant and independent of payload size. A write must hash the whole payload before it can verify anything, so its cost is linear in it.
 
 | | Workers Free | Workers Paid |
 | --- | --- | --- |
@@ -350,7 +352,16 @@ The default of 10 MiB is set by the Worker rather than the store. A write holds 
 | KV writes | 1,000/day, all keys | unlimited |
 | requests | 100,000/day | unlimited |
 
-A free-tier deployment should therefore set a much lower cap than the default, sized by measurement rather than by hope, and should expect the daily write ceiling to bind before the CPU one for anything with real users. Everything else in this specification behaves identically on both plans.
+Measured on real workerd (DECISIONS.md #17, reproducible from `bench/`), the two costs a request can incur are:
+
+| | |
+| --- | --- |
+| SHA-256 of the payload | ~1960 MiB/s, so **5.1 ms at 10 MiB** |
+| one signature recovery, plus the EIP-191 keccak | **0.66 ms**, whatever the payload |
+
+So the worst request the default cap permits, a 10 MiB write, is about 5.8 ms of CPU, and **fits inside the free plan's 10 ms budget**. The daily KV write ceiling of 1,000 is what binds a free-tier deployment, not CPU, and it binds long before anything with real users. Everything else in this specification behaves identically on both plans.
+
+This is only true because the payload hash is SHA-256. Under keccak the same write costs 179 ms, and a free-tier cap would have had to be around 400 KB.
 
 Clients should compress before encrypting, which typically shrinks account-style JSON several-fold and is the only lever that makes a whole-payload sync cheap. Compressing after encryption does nothing.
 
@@ -370,12 +381,4 @@ The message encoding is the only thing keeping a client and the server in agreem
 
 ## Open
 
-- **Which hash covers the payload.** See the note below: it is the one remaining decision that changes the signed message.
-
-## Under review: the payload hash
-
-`Data:` currently carries `keccak256` of the payload, which matches the EIP-191 digest and needs no second primitive. It is also the slowest option available in a Worker by a wide margin, since keccak has no native implementation there and runs in JavaScript or WebAssembly at tens of megabytes per second, while `crypto.subtle.digest("SHA-256", …)` is native and roughly an order of magnitude faster.
-
-That difference is the difference between a 10 MiB write costing hundreds of milliseconds of billed CPU and costing tens, and between a free-tier deployment handling a megabyte and handling almost nothing. Clients benefit identically, since WebCrypto is native in browsers and in Node.
-
-The cost is a second hash function in one protocol: keccak for the EIP-191 message digest, which is a few hundred bytes and therefore free, and SHA-256 for the payload, which is the only part that scales. This must be settled before any signature exists, and needs measurement rather than the estimates above.
+Nothing. The last open question, which hash covers the payload, was settled by measurement: DECISIONS.md #17.

@@ -147,7 +147,9 @@ This is what drove the namespace charset to lowercase, `:`-free, and never `.` o
 
 The write cap is **deployment configuration rather than protocol**, because raising one is always safe and lowering one breaks whatever is already over it. Freezing a number into the wire format would mean the only way to raise it later is a new format, and per decision 6 there is no version mechanism to make that cheap.
 
-The default of 4 MiB is set by the Worker, not by the store. A Worker isolate has 128 MB shared across the concurrent requests it is serving, and with decision 12 a write holds the payload roughly once while hashing and verifying it. CPU is the tighter constraint: hashing several megabytes is on the order of a hundred milliseconds, fine against the paid plan's 30 seconds and impossible against the free plan's 10 ms. Reads carry no cap at all, because they stream.
+The default of 10 MiB is set by the Worker, not by the store. A Worker isolate has 128 MB shared across the concurrent requests it is serving, and with decision 12 a write holds the payload roughly once while hashing and verifying it.
+
+CPU was expected to be the tighter constraint, on the assumption that hashing several megabytes costs on the order of a hundred milliseconds: fine against the paid plan's 30 seconds and impossible against the free plan's 10 ms. Decision 17 measured it and removed that constraint. With SHA-256 a 10 MiB write costs about 5.8 ms of CPU, so the default cap fits the free plan, and it is the daily KV write ceiling that binds instead. The figure quoted here was originally 4 MiB, chosen under the keccak assumption; measurement is what raised it. Reads carry no cap at all, because they stream.
 
 **Costs.** The default is a judgement rather than a measurement, and a whole-store blob that never prunes will eventually meet it. When it does the write fails and sync stops, so the failure needs to be legible: that is why it is its own error code rather than a generic rejection. Rate limiting and quotas are deliberately absent, since they are platform concerns and belong outside a core that must stay free of platform APIs.
 
@@ -170,6 +172,37 @@ The other cost is that failures have to be indistinguishable from absence, so a 
 The third cost is the one to be clear-eyed about: **a deployment is all-authenticated or all-open.** Mixing public and private records in one deployment would need the choice inside the signed message, and per decision 6 there is no cheap way to add a line later. An app that wants both runs two deployments. That is the deliberate trade: keeping this out of the format is what makes it free to change, and the price is that it cannot vary per record.
 
 Sharing with anyone other than the owner is deliberately not here either: it is an ACL, with naming and revocation, and it is a feature rather than a field. Multiple devices are already covered, because devices deriving the same key share one address.
+
+## 17. The payload is hashed with SHA-256, not keccak
+
+**Why.** This was the last open question in SPEC.md, and the only one that changes the signed message, so it had to be settled before any signature existed. `Data:` originally carried `keccak256`, which has the appeal of needing no second primitive: EIP-191 already forces keccak for the message digest, and every ethereum client already has it.
+
+The estimate in the spec was that SHA-256 would be "roughly an order of magnitude" faster. That was a guess, and guesses about the one cost that scales with payload size are not good enough, so it was measured on real workerd rather than on miniflare or Node. The harness is in [`bench/`](bench/) and the run is one command.
+
+| payload | SHA-256 (`crypto.subtle`) | keccak (`js-sha3`) | keccak (`@noble/hashes`) | keccak (vendored WASM) | SHA-256 (pure JS) |
+| --- | --- | --- | --- | --- | --- |
+| 100 KB | **0.045 ms** | 1.70 ms | 2.80 ms | 0.30 ms | 0.61 ms |
+| 1 MiB | **0.51 ms** | 17.8 ms | 29.1 ms | 3.09 ms | 6.15 ms |
+| 10 MiB | **5.09 ms** | 179 ms | 295 ms | 31.5 ms | 61.3 ms |
+| throughput | **~1960 MiB/s** | ~56 MiB/s | ~34 MiB/s | ~320 MiB/s | ~163 MiB/s |
+
+And the two constant costs, for scale: the EIP-191 keccak over the message is **8.6 µs**, and a whole verification, keccak plus one secp256k1 recovery plus the address keccak, is **0.66 ms**.
+
+The estimate was low. It is **35x** against the fastest keccak an implementation can actually install, not 10x.
+
+Three things the measurement decided that the estimate could not:
+
+- **A 10 MiB write fits on Workers Free.** 5.1 ms of hashing plus 0.66 ms of verification is 5.8 ms against a 10 ms budget. Under keccak the same write is 179 ms, and the free-tier cap would have had to be around 400 KB. This is why decision 15's default moved from 4 MiB to 10 MiB: the number that forced it down was an estimate that turned out to be wrong.
+- **WASM is not an escape hatch.** workerd refuses to compile WebAssembly at runtime (`Wasm code generation disallowed by embedder`), and `hash-wasm` and every comparable package compile an embedded blob when they load, so all of them fail outright in a Worker. The 320 MiB/s column was obtained by intercepting `WebAssembly.compile` under Node to extract hash-wasm's raw module, declaring it in the worker config, and driving its private undocumented ABI by hand. That is a vendored fork, not a dependency, and it still loses by 6x.
+- **The pure-JS fallback is fine.** `crypto.subtle` is undefined in a browser outside a secure context, so a client on plain `http://` needs a JS SHA-256. At 163 MiB/s it is still three times faster than the *fastest* JS keccak, so the fallback path is better than keccak's happy path.
+
+**Costs.** Two hash functions in one protocol rather than one. A client now needs SHA-256 as well as the keccak it already has, though SHA-256 is in every runtime's standard library and the marginal cost is a single call.
+
+That call is **async**: `crypto.subtle.digest` returns a promise where keccak is synchronous. It is absorbed by a write path that was already async on both sides, but it does leak into any client API that wanted to build a message synchronously.
+
+And `crypto.subtle` requires a secure context, so a client served over plain HTTP outside localhost has to carry a JS implementation. Given the numbers above that is a smaller penalty than choosing keccak would have been for everyone.
+
+One caveat on the measurements, recorded so a future re-run is not confusing: `crypto.subtle`'s SHA-256 uses the CPU's SHA extensions. The machine here has them and so does Cloudflare's fleet (AMD EPYC, Zen 1 onward), so the ratio holds in production, but hardware without `sha_ni` will show a much smaller gap.
 
 ## The frozen predecessor
 

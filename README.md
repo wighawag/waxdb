@@ -13,7 +13,7 @@ A record is an opaque **payload of bytes** plus the secp256k1 signature that aut
 
 The protocol is specified. The implementation is not written: every route answers `not_implemented` in the error shape the spec defines. What exists is the platform skeleton, the storage seam and the two adapters, inherited from the predecessor.
 
-One protocol decision is still open, marked in SPEC.md: which hash covers the payload.
+The protocol has no open questions. The last one, which hash covers the payload, was settled by measurement in `bench/` and recorded as DECISIONS.md #17.
 
 ## Layout
 
@@ -23,6 +23,7 @@ packages/
 platforms/
   cf-worker/         Cloudflare Workers: Storage -> KV
   nodejs/            CLI: Storage -> a local store
+bench/               what hashing costs in a Worker (DECISIONS.md #17)
 ```
 
 The core never touches a platform API. It receives `getStorage` and `getEnv` callbacks and each platform supplies its own, which is what lets the same code, and the same tests, run on Workers and on Node.

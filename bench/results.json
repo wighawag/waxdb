@@ -1,0 +1,135 @@
+{
+	"measuredAt": "2026-08-27T09:58:25.758Z",
+	"results": [
+		{
+			"size": "100 KB",
+			"bytes": 100000,
+			"alg": "sha256-subtle",
+			"msPerHash": 0.04540935999999988,
+			"msPerHashMedian": 0.04641646000000037,
+			"mibPerSec": 2100.171234314363
+		},
+		{
+			"size": "100 KB",
+			"bytes": 100000,
+			"alg": "sha256-noble",
+			"msPerHash": 0.6117848200000015,
+			"msPerHashMedian": 0.6209467400000017,
+			"mibPerSec": 155.88394566675382
+		},
+		{
+			"size": "100 KB",
+			"bytes": 100000,
+			"alg": "keccak-wasm",
+			"msPerHash": 0.29864438000000176,
+			"msPerHashMedian": 0.30131844,
+			"mibPerSec": 319.33442591695325
+		},
+		{
+			"size": "100 KB",
+			"bytes": 100000,
+			"alg": "keccak-jssha3",
+			"msPerHash": 1.7022358399999995,
+			"msPerHashMedian": 1.7321737199999985,
+			"mibPerSec": 56.0248053763367
+		},
+		{
+			"size": "100 KB",
+			"bytes": 100000,
+			"alg": "keccak-noble",
+			"msPerHash": 2.8024569799999983,
+			"msPerHashMedian": 2.8311148400000024,
+			"mibPerSec": 34.02993598874979
+		},
+		{
+			"size": "1 MiB",
+			"bytes": 1048576,
+			"alg": "sha256-subtle",
+			"msPerHash": 0.511103699999967,
+			"msPerHashMedian": 0.5157333999999537,
+			"mibPerSec": 1956.550109107143
+		},
+		{
+			"size": "1 MiB",
+			"bytes": 1048576,
+			"alg": "sha256-noble",
+			"msPerHash": 6.153634999999985,
+			"msPerHashMedian": 6.2522226999999475,
+			"mibPerSec": 162.50557597257594
+		},
+		{
+			"size": "1 MiB",
+			"bytes": 1048576,
+			"alg": "keccak-wasm",
+			"msPerHash": 3.0863020000000234,
+			"msPerHashMedian": 3.0998707000000194,
+			"mibPerSec": 324.0123617196219
+		},
+		{
+			"size": "1 MiB",
+			"bytes": 1048576,
+			"alg": "keccak-jssha3",
+			"msPerHash": 17.76408580000002,
+			"msPerHashMedian": 18.076786700000003,
+			"mibPerSec": 56.293355664832404
+		},
+		{
+			"size": "1 MiB",
+			"bytes": 1048576,
+			"alg": "keccak-noble",
+			"msPerHash": 29.131588599999986,
+			"msPerHashMedian": 29.93798019999999,
+			"mibPerSec": 34.32699856265307
+		},
+		{
+			"size": "10 MiB",
+			"bytes": 10485760,
+			"alg": "sha256-subtle",
+			"msPerHash": 5.09409450000021,
+			"msPerHashMedian": 5.168590000001132,
+			"mibPerSec": 1963.0574187423472
+		},
+		{
+			"size": "10 MiB",
+			"bytes": 10485760,
+			"alg": "sha256-noble",
+			"msPerHash": 61.340965000000324,
+			"msPerHashMedian": 62.33642950000103,
+			"mibPerSec": 163.0231933912345
+		},
+		{
+			"size": "10 MiB",
+			"bytes": 10485760,
+			"alg": "keccak-wasm",
+			"msPerHash": 31.546689000000697,
+			"msPerHashMedian": 31.769340500000908,
+			"mibPerSec": 316.9904771939705
+		},
+		{
+			"size": "10 MiB",
+			"bytes": 10485760,
+			"alg": "keccak-jssha3",
+			"msPerHash": 178.6593854999992,
+			"msPerHashMedian": 179.49103449999984,
+			"mibPerSec": 55.97243028690505
+		},
+		{
+			"size": "10 MiB",
+			"bytes": 10485760,
+			"alg": "keccak-noble",
+			"msPerHash": 294.722213,
+			"msPerHashMedian": 298.5378819999996,
+			"mibPerSec": 33.93025553862817
+		}
+	],
+	"constants": [
+		{
+			"alg": "keccak-message",
+			"usPerOp": 8.64185999998881
+		},
+		{
+			"alg": "recover",
+			"usPerOp": 657.0311749999928
+		}
+	]
+}

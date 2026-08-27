@@ -2,7 +2,7 @@
 
 Ordered. [SPEC.md](SPEC.md) is the target, [DECISIONS.md](DECISIONS.md) is why.
 
-- [ ] **Settle the payload hash** (SPEC.md, "Under review"). keccak matches the EIP-191 digest and needs no second primitive; SHA-256 is native in a Worker and roughly an order of magnitude faster, which is what decides whether a free-tier deployment is usable. Measure both in workerd before choosing. This must land before any signature exists, because it changes the signed message.
+- [x] **Settle the payload hash.** Measured on real workerd (`bench/`): SHA-256 is 35x faster than the fastest installable keccak, and it is what makes a 10 MiB write fit inside the free plan's 10 ms budget. `Data:` carries SHA-256; keccak stays for the EIP-191 digest only. DECISIONS.md #17.
 
 - [ ] **Implement the protocol.** The storage seam first (`head`/`get`/`put`/`delete` over bytes plus metadata, reads streaming, SPEC.md), then the two adapters, then the handler. Every route currently answers `not_implemented`.
 

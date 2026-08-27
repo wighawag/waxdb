@@ -1,0 +1,19 @@
+{
+  "name": "waxdb-bench",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "description": "measures what hashing a payload costs inside a Worker (DECISIONS.md #17)",
+  "type": "module",
+  "scripts": {
+    "bench": "./run.sh"
+  },
+  "devDependencies": {
+    "@noble/curves": "^1.9.0",
+    "@noble/hashes": "^2.0.0",
+    "esbuild": "^0.25.0",
+    "hash-wasm": "^4.12.0",
+    "js-sha3": "^0.8.0",
+    "workerd": "^1.20250408.0"
+  }
+}
