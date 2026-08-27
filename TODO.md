@@ -18,7 +18,7 @@ Ordered. [SPEC.md](SPEC.md) is the target, [DECISIONS.md](DECISIONS.md) is why.
 
 - [x] **Create the KV namespaces** and deploy. Live at `waxdb.rim.workers.dev`.
 
-- [ ] **Redeploy with the `head` fix and re-run the live suite.** `head` was answered from `kv.list`, which lags `kv.get` by ~30 seconds on real KV, so the counter rule went unenforced for that window (DECISIONS.md #19). Fixed and green locally, but only a live run proves it: `LIVE_URL=https://waxdb.rim.workers.dev pnpm test:live`.
+- [x] **Redeploy with the `head` fix and re-run the live suite.** Green. Verified in production: `HEAD` and `GET` now both observe a fresh write at 368 ms where `HEAD` used to take 31.5 s, and a stale write is rejected with `counter_not_increasing` immediately, with no propagation wait. DECISIONS.md #19.
 
 - [ ] **Bump `@cloudflare/vitest-pool-workers`.** It pins an older workerd, so the worker contract currently runs against compatibility date `2024-12-30` while `wrangler.toml` asks for `2026-08-01`, and miniflare warns about the gap on every run. The tests pass on both, but they are not verifying the runtime a deploy would get.
 
@@ -26,7 +26,7 @@ Ordered. [SPEC.md](SPEC.md) is the target, [DECISIONS.md](DECISIONS.md) is why.
 
 - [ ] **Publish, server first.** `waxdb` depends on `waxdb-server` via `workspace:*`, which pnpm rewrites to a real version at publish time, so publishing the CLI first leaves `npm i waxdb` unresolvable. Both names are held by `0.0.0` placeholders.
 
-- [ ] **Run the live conformance suite** once there is a deployment: `LIVE_URL=… pnpm test:live`. It writes, and it spends a few hundred KV writes, so not against a free-tier deployment that matters.
+- [ ] **Run the live conformance suite before each deploy**, not only after. `wrangler versions upload` gives a preview URL to point `LIVE_URL` at without taking traffic. This is the only harness that runs against real KV, and it is what caught DECISIONS.md #19 after 163 local worker assertions passed. It writes, and it spends a few hundred KV writes, so not against a free-tier deployment that matters.
 
 - [ ] **Move the consumers over.** `synqable`'s adapter (`sync/adapters/secp256k1-db`) speaks the old JSON-RPC protocol and needs a waxdb sibling. Its `Secp256k1Signer` interface stays as-is, since waxdb kept `signMessage(string)`. The client needs SHA-256 for the payload now as well as keccak for the digest, and `vectors.json` is what it should test against.
 
