@@ -1,6 +1,6 @@
 import kv from 'polystore';
 import type {Store} from 'polystore';
-import type {Storage} from 'secp256k1-db-server';
+import type {Storage} from 'waxdb-server';
 
 /**
  * Polystore adapter, used off-Cloudflare where there is no legacy data at

@@ -1,29 +1,27 @@
-# secp256k1-db (CLI)
+# waxdb (CLI)
 
-Runs secp256k1-db as a local Node process, so a project can develop against it offline instead of the deployed Cloudflare worker.
+Runs waxdb as a local Node process, so a project can develop against it offline instead of against a deployed Cloudflare worker.
 
 ```bash
-npx secp256k1-db                                  # in memory, port 2000
-npx secp256k1-db --port 3000 --db ./data.json     # persisted to a JSON file
-npx secp256k1-db --token-admin <token>            # enables the reset method
-npx secp256k1-db --db ./data.json --clear         # start from an empty store
+npx waxdb                                   # in memory, port 2000
+npx waxdb --port 3000 --db ./waxdb-data     # persisted
+npx waxdb --db ./waxdb-data --clear         # start from an empty store
 ```
 
 | option | default | meaning |
 | --- | --- | --- |
 | `-p, --port` | `2000` | port to listen on |
-| `-d, --db` | `:memory:` | `:memory:`, or a path to a JSON file to persist to |
-| `-t, --token-admin` | unset | value the `TOKEN` header must match for `reset` (also read from `TOKEN_ADMIN`) |
+| `-d, --db` | `:memory:` | `:memory:`, or a path to persist to |
 | `-c, --clear` | off | empty the store before listening |
 
-`--clear` deletes **every** record, which is not what the `reset` RPC method does (one record, and only with the admin token). It is a no-op with the default `:memory:` store, which starts empty anyway.
+`--clear` deletes **every** record. It is a no-op with the default `:memory:` store, which starts empty anyway.
 
-It answers exactly what the deployed service answers: the same contract suite runs against both.
+This is not a mock. It answers what the deployed service answers, because one contract suite runs against both, and that is the whole point: a consumer developing offline is exercising the real protocol.
 
 ## Storage
 
-Persistence goes through [polystore](https://github.com/franciscop/polystore), with a `Map` for `:memory:` and a single JSON file otherwise.
+Still on [polystore](https://github.com/franciscop/polystore), which is what the predecessor used, and which is being replaced.
 
-Single file, not a file per key, on purpose: real keys contain characters like `:` (namespaces look like `conquest-0xABC…:0xDEF…`), which do not survive being used as filenames.
+polystore stores JSON-shaped values with an optional TTL and has no metadata channel, so a byte payload has to be base64'd and wrapped in an envelope, and its persistent backend rewrites the entire store on every write. Both are wrong for a blob store (DECISIONS.md #14). The replacement is two small purpose-built backends: a `Map` for `:memory:`, and a directory where each record is its payload as an ordinary file plus a small JSON sidecar, at a path mirroring the key.
 
-The file layout is polystore's own (`{key: {expires, value}}`), which is *not* the layout of the Cloudflare KV namespace. That is fine here, where there is no legacy data, and it is exactly why the Cloudflare adapter does not go through polystore: it would rewrite records that live clients already depend on.
+That is also why the namespace charset is lowercase, `/`-free, `:`-free and never `.` or `..`: it makes every key a valid path on every filesystem, so a payload can be stored as a file you can open rather than as base64 inside JSON.

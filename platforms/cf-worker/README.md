@@ -1,19 +1,24 @@
-# secp256k1-db on Cloudflare Workers
+# waxdb on Cloudflare Workers
 
-This is the deployment that live apps talk to.
+## Before the first deploy
 
-## The two identifiers that must not drift
+`wrangler.toml` ships with placeholder KV ids on purpose. Create the namespaces and paste them in:
 
-```toml
-name = "secp256k1-kv-db"                  # the deployed worker, and therefore the URL
-id   = "198cd439a1e2498e98c4e70f0aaaa47f" # the KV namespace holding the live records
+```bash
+npx wrangler kv namespace create RECORDS
+npx wrangler kv namespace create RECORDS --preview
 ```
 
-`https://secp256k1-kv-db.rim.workers.dev` is the URL clients use, and it follows the worker `name`: renaming the worker moves the service to a different URL and silently leaves every client talking to the old one. The KV `id` is the data: the namespace (titled `secp256k1-db-PRIVATE_STORE`) holds records written since 2021, and pointing the binding elsewhere serves an empty database rather than an error.
+**Do not point this at the frozen `secp256k1-db` namespace** (`198cd439a1e2498e98c4e70f0aaaa47f`). That service is still running and still serving apps that cannot be rebuilt, waxdb shares no storage with it by design (DECISIONS.md #1), and the two use incompatible record formats. Pointing at it would not merge the data, it would write records the old service cannot read into a namespace it is still reading.
 
-Both values were wrong in this repo between September 2023 and 2026, which would have published a second, dataless worker instead of updating the live one. Change them only deliberately.
+Two identifiers then matter, permanently:
 
-`preview_id` (`a6327ec076ba42f589d1791afa537cf5`, empty) is for `wrangler dev --remote` only.
+```toml
+name = "waxdb"   # the deployed worker, and therefore the URL
+id   = "…"       # the KV namespace holding the records
+```
+
+Renaming the worker moves the service to a different URL and silently leaves every client talking to the old one. Repointing the binding serves an empty database rather than an error. A custom domain is worth setting up early for exactly this reason: it makes the next rename a DNS change instead of a client change.
 
 ## Deploy
 
@@ -21,33 +26,22 @@ Both values were wrong in this repo between September 2023 and 2026, which would
 pnpm run deploy     # from the repo root: builds the server, then deploys
 ```
 
-Note the `run`: `pnpm deploy` is a pnpm builtin (it prepares a deployable package folder) and will not execute this script. Inside this directory, `pnpm run deploy` works too, but the root script is preferable because it rebuilds `packages/server` first, which the worker imports.
+Note the `run`: `pnpm deploy` is a pnpm builtin that prepares a deployable package folder and will not execute this script.
 
-Then verify the deployment against the contract:
+For a safer rollout, `wrangler versions upload` publishes without taking traffic, `wrangler versions deploy` ramps it, and `wrangler rollback` reverts.
 
-```bash
-LIVE_URL=https://secp256k1-kv-db.rim.workers.dev LIVE_RESET=true \
-  pnpm --filter secp256k1-db-server test:live
-```
+When reading or writing KV from the command line, `--remote` matters: wrangler 4 uses *local* storage by default, so without it you will be told a key does not exist while the live record sits there untouched.
 
-That run writes throwaway records under generated namespaces. Delete them afterwards, and check the key count is back to where it started:
+## Plan
 
-```bash
-wrangler kv key list --namespace-id 198cd439a1e2498e98c4e70f0aaaa47f --remote > keys.json
-# keep only keys matching ^(ns|a|b|we:ird)-[0-9a-z]{8}-\d+-[0-9a-z]+_0x[0-9a-f]{40}$
-wrangler kv bulk delete junk.json --namespace-id 198cd439a1e2498e98c4e70f0aaaa47f --remote
-```
-
-`--remote` matters: wrangler 4 reads and writes *local* storage by default, so without it you will be told the key does not exist while the live record sits there untouched.
-
-For a safer rollout, `wrangler versions upload` publishes without taking traffic, and `wrangler versions deploy` ramps it. `wrangler rollback` reverts.
+Reads are streamed and never hashed, so they are cheap at any size on any plan. Writes hash the whole payload before they can verify it, so their CPU cost is linear in payload size, and that is what decides which plan a deployment can run on. Workers Free allows 10 ms of CPU per request and 1,000 KV writes per day across all keys. Set `MAX_PAYLOAD_BYTES` accordingly: the 10 MiB default assumes a paid plan.
 
 ## Secrets
 
-`TOKEN_ADMIN` gates the `reset` method and is unset today, so `reset` answers `not admin`. Set it with `wrangler secret put TOKEN_ADMIN`. It is a secret, not a var, so it must never be added to `wrangler.toml`.
+None. waxdb has no admin path and no shared secret: deletion is an owner-signed tombstone like any other write (DECISIONS.md #7). If you ever need to clear a record out of band, overwrite it rather than deleting the key, so the counter high-water mark survives and old signatures stay below it.
 
 ## Tests
 
-`pnpm test` runs the shared contract on real workerd against a real (miniflare-backed) KV namespace, isolated per test and never touching the remote namespace. Because the binding is reachable from the tests, the storage-format assertions run here: this is what proves the KV adapter writes the exact bytes the live namespace already contains.
+`pnpm test` runs the shared contract on real workerd against a miniflare-backed KV namespace, isolated per test and never touching the remote namespace. Because the binding is reachable from the tests, the storage-layout assertions run here, which is what proves the adapter writes the bytes the spec says it does.
 
-The `nodejs_compat` flag needed by `@cloudflare/vitest-pool-workers` lives in `vitest.config.ts`, deliberately not in `wrangler.toml`, so the deployed runtime keeps the flags it has always had.
+The `nodejs_compat` flag needed by `@cloudflare/vitest-pool-workers` lives in `vitest.config.ts` rather than in `wrangler.toml`, so the deployed runtime is not silently given flags the tests need.

@@ -1,9 +1,9 @@
-import {createServer} from 'secp256k1-db-server';
+import {createServer} from 'waxdb-server';
 import type {CloudflareEnv} from './env.js';
 import {KVStorage} from './storage.js';
 
 export const app = createServer<CloudflareEnv>({
-	getStorage: (c) => new KVStorage(c.env.PRIVATE_STORE),
+	getStorage: (c) => new KVStorage(c.env.RECORDS),
 	getEnv: (c) => c.env,
 });
 

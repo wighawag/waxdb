@@ -1,12 +1,12 @@
 {
-  "name": "secp256k1-db-cf-worker",
+  "name": "waxdb-cf-worker",
   "version": "0.0.1",
-  "description": "Cloudflare Workers platform for secp256k1-db",
+  "description": "Cloudflare Workers platform for waxdb",
   "license": "AGPL-3.0-only",
   "private": true,
   "type": "module",
   "dependencies": {
-    "secp256k1-db-server": "workspace:*"
+    "waxdb-server": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.5.36",

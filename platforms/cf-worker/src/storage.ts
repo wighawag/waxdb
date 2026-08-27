@@ -1,12 +1,15 @@
-import type {Storage} from 'secp256k1-db-server';
+import type {Storage} from 'waxdb-server';
 
 /**
  * Cloudflare KV adapter.
  *
- * Intentionally the thinnest possible passthrough: this namespace already holds
- * the live records, so the adapter must not prefix keys, wrap values, or
- * re-encode anything. `KVNamespace.get` returns the stored text or null, which
- * is exactly the `Storage` contract.
+ * Intentionally the thinnest possible passthrough: the adapter must not prefix
+ * keys, wrap values, or re-encode anything, so what is on disk is exactly what
+ * the core asked for.
+ *
+ * NOTE: still the old string-valued seam. SPEC.md defines the real one
+ * (`head`/`get`/`put`/`delete` over bytes plus metadata, reads streaming), and
+ * this moves to it with the handler.
  */
 export class KVStorage implements Storage {
 	constructor(private readonly kv: KVNamespace) {}

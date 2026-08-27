@@ -1,5 +1,5 @@
 {
-  "name": "secp256k1-db-monorepo",
+  "name": "waxdb-monorepo",
   "version": "0.0.0",
   "private": true,
   "license": "AGPL-3.0-only",
@@ -7,10 +7,10 @@
   "scripts": {
     "build": "pnpm -r run build",
     "test": "pnpm run build && pnpm -r run test",
-    "test:live": "pnpm --filter secp256k1-db-server run test:live",
-    "dev:cf": "pnpm --filter secp256k1-db-cf-worker run dev",
-    "dev:node": "pnpm --filter secp256k1-db run dev",
-    "deploy": "pnpm run build && pnpm --filter secp256k1-db-cf-worker run deploy",
+    "test:live": "pnpm --filter waxdb-server run test:live",
+    "dev:cf": "pnpm --filter waxdb-cf-worker run dev",
+    "dev:node": "pnpm --filter waxdb run dev",
+    "deploy": "pnpm run build && pnpm --filter waxdb-cf-worker run deploy",
     "format": "pnpm -r run format",
     "format:check": "pnpm -r run format:check"
   }

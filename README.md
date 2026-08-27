@@ -1,95 +1,54 @@
-# secp256k1-db
+# waxdb
 
-An authenticated key-value database using secp256k1 signatures (compatible with Ethereum wallets).
+An authenticated key-value store for ethereum addresses. Anyone can read a record, only the holder of the key can write one.
 
-Data is stored per Ethereum address, and only the holder of the private key can write it: every write carries a signature over the value, and a counter prevents replaying an older write. Reads are public.
+A record is an opaque **payload of bytes** plus the secp256k1 signature that authorises it, stored under `(namespace, owner)`. A counter that must increase stops an old write being replayed. The payload is never interpreted by the server, and in practice it is compressed ciphertext.
 
-The service runs on Cloudflare Workers (the deployment live apps talk to) and as a local Node process, from the same platform-agnostic core.
+**The device is the source of truth and waxdb is a cache.** A record cannot be recovered, migrated or re-signed by the server, because only the key holder can sign. Clients are expected to hold their own copy and treat a read as input to a merge rather than as an authority, which is what makes losing the server copy a re-push rather than a loss.
+
+- **[SPEC.md](SPEC.md)** is the protocol: the wire, the signed message, the storage layout, the limits.
+- **[DECISIONS.md](DECISIONS.md)** is why it is shaped that way, and what each decision cost.
+
+## Status
+
+The protocol is specified. The implementation is not written: every route answers `not_implemented` in the error shape the spec defines. What exists is the platform skeleton, the storage seam and the two adapters, inherited from the predecessor.
+
+One protocol decision is still open, marked in SPEC.md: which hash covers the payload.
 
 ## Layout
 
 ```
 packages/
-  server/            core service, no platform APIs, storage behind an interface
-    src/api/         the JSON-RPC handler
-    src/record.ts    the on-disk format (frozen: live data depends on it)
-    src/storage.ts   the storage seam
-    test/contract/   the behavioural contract, run against every platform
+  server/            the service, no platform APIs, storage behind an interface
 platforms/
-  cf-worker/         Cloudflare Workers: Storage -> KV namespace
-  nodejs/            CLI: Storage -> polystore (memory or a JSON file)
+  cf-worker/         Cloudflare Workers: Storage -> KV
+  nodejs/            CLI: Storage -> a local store
 ```
 
-The core never touches a platform API. It receives `getStorage` and `getEnv` callbacks, and each platform supplies its own, which is what makes the same code (and the same tests) run on Workers and on Node.
+The core never touches a platform API. It receives `getStorage` and `getEnv` callbacks and each platform supplies its own, which is what lets the same code, and the same tests, run on Workers and on Node.
 
-## Using it locally (offline)
+## Using it locally, offline
 
 ```bash
-npx secp256k1-db --port 2000 --db ./secp256k1-db.json
+npx waxdb --port 2000 --db ./waxdb-data
 ```
 
-`--db :memory:` (the default) keeps everything in memory, any other value is a path to a JSON file it persists to. `--clear` empties the store before starting, and `--token-admin <token>` enables the `reset` method for requests carrying that value in a `TOKEN` header.
+The local server is not a mock. It answers what the deployed service answers, because one contract suite runs against both, and it is what makes a consumer's offline development real rather than approximate.
 
 ## Development
 
 ```bash
 pnpm install
-pnpm test          # the contract, on all platforms
+pnpm test          # the contract, on every platform
 pnpm dev:cf        # wrangler dev
 pnpm dev:node      # the CLI against a local store
 pnpm build
 pnpm run deploy    # note the `run`: `pnpm deploy` is a pnpm builtin
 ```
 
-## API
+## The predecessor
 
-All methods are JSON-RPC 2.0 over `POST`. The path is ignored, so any path works.
-
-### `wallet_getString`
-
-Reads the record for an address in a namespace. Returns `{data, counter, signature}`, or `{data: "", counter: "0", signature: ""}` when nothing is stored.
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "wallet_getString",
-  "params": ["0x1234567890123456789012345678901234567890", "my-namespace"]
-}
-```
-
-### `wallet_putString`
-
-Writes a record. Parameters are `address`, `namespace`, `counter`, `data`, `signature`, where the signature is over the message `put:${namespace}:${counter}:${data}` and the counter is a millisecond timestamp that must be greater than the stored one and not in the future.
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "wallet_putString",
-  "params": [
-    "0x1234567890123456789012345678901234567890",
-    "my-namespace",
-    "1632146788123",
-    "Hello, world!",
-    "0x123...signature"
-  ]
-}
-```
-
-### `reset`
-
-Deletes a record. Requires the `TOKEN` header to match `TOKEN_ADMIN`, and is inert when that is unset.
-
-## Deployment
-
-See [platforms/cf-worker/README.md](platforms/cf-worker/README.md). Read it before deploying: the worker name and KV namespace id in `wrangler.toml` are not interchangeable, they identify the live service and its data.
-
-## Behaviour is pinned by tests
-
-`packages/server/test/contract/` holds one suite that every platform runs, plus an opt-in run against a deployed instance. It documents the current behaviour, quirks included, because live apps depend on the exact responses. Read [packages/server/test/README.md](packages/server/test/README.md) before changing anything user-visible.
-
-The behaviour being pinned is not the same as the behaviour being right. [KNOWN-ISSUES.md](KNOWN-ISSUES.md) lists what is wrong with it and what fixing each thing would break.
+waxdb replaces [etherplay/secp256k1-db](https://github.com/etherplay/secp256k1-db), which is archived, still deployed, and still serving apps that cannot be rebuilt. waxdb shares no code path, no deployment and no storage with it, and neither can read the other's records. The reasoning is DECISIONS.md #1, and the operational rules for the frozen service are at the end of that file.
 
 ## License
 

@@ -1,47 +1,19 @@
-- [x] make it platform generic
-- [x] use https://github.com/franciscop/polystore
+# TODO
 
-  Used on the Node platform only. The Cloudflare adapter talks to KV directly:
-  polystore wraps values (`{expires, value}`), which would rewrite the 2594
-  live records into a format existing clients cannot read.
+Ordered. [SPEC.md](SPEC.md) is the target, [DECISIONS.md](DECISIONS.md) is why.
 
-- [ ] fix the issues in [KNOWN-ISSUES.md](KNOWN-ISSUES.md), in that order.
-      The first two are the ones that matter: `reset` allows replaying old
-      writes, and the signed message can be re-split into a different
-      namespace. Both are currently unreachable/unexploited, neither is
-      safe to leave.
-- [ ] publish the CLI (`platforms/nodejs`) and move the `helper-services/`
-      of the dependent repos over to it. They currently install the old
-      `secp256k1-db@0.0.1` source package purely to run the worker locally,
-      and their wrangler.toml points at a KV namespace id that no longer
-      exists. See "The npm package" below.
-- [ ] retire `manual-test/`, superseded by the contract suite and the CLI
-      smoke test
+- [ ] **Settle the payload hash** (SPEC.md, "Under review"). keccak matches the EIP-191 digest and needs no second primitive; SHA-256 is native in a Worker and roughly an order of magnitude faster, which is what decides whether a free-tier deployment is usable. Measure both in workerd before choosing. This must land before any signature exists, because it changes the signed message.
 
-## The npm package
+- [ ] **Implement the protocol.** The storage seam first (`head`/`get`/`put`/`delete` over bytes plus metadata, reads streaming, SPEC.md), then the two adapters, then the handler. Every route currently answers `not_implemented`.
 
-`secp256k1-db@0.0.1` (published 2023-09-15) ships only `src/handler.ts`,
-`src/index.ts`, `package.json` and `tsconfig.json`. No `main`, no `bin`, no
-`types`: it is not importable, and it was never meant to be. Dependent repos
-consume it as a *source drop*, with a local `helper-services/secp256k1-db/`
-whose wrangler.toml says:
+- [ ] **Replace polystore in `platforms/nodejs`** with a `Map` backend and a directory backend (DECISIONS.md #14).
 
-    main = "node_modules/secp256k1-db/src/index.ts"
+- [ ] **Write the contract suite** against the new protocol, running on both platforms as before, plus `vectors.json` pinning `(inputs → message → digest)` so a client and the server cannot drift silently.
 
-so that `wrangler dev` runs this service locally on a spare port. That is
-exactly the job `platforms/nodejs` now does, better.
+- [ ] **Create the KV namespaces** and fill in `platforms/cf-worker/wrangler.toml`. Not the frozen namespace: see that file's warning.
 
-Two things to settle before publishing:
+- [ ] **Publish, server first.** `waxdb` depends on `waxdb-server` via `workspace:*`, which pnpm rewrites to a real version at publish time, so publishing the CLI first leaves `npm i waxdb` unresolvable. Both names are held by `0.0.0` placeholders.
 
-- the meaning of the package changes from "worker source" to "CLI", so it
-  goes out as `0.1.0`. Nothing auto-upgrades: `^0.0.1` expands to
-  `>=0.0.1 <0.0.2-0`, so the pinned repos stay on the old source drop until
-  they are moved over deliberately.
-- `secp256k1-db` depends on `secp256k1-db-server` via `workspace:*`, which
-  pnpm rewrites to a real version at publish time. So the server package
-  has to be published first, or `npm i secp256k1-db` cannot resolve.
-- those helper-services pin KV namespace `6a9b71a2…`, which was deleted as
-  unused. Local `wrangler dev` is unaffected (miniflare treats the id as a
-  local label), but `--remote` or a deploy from those directories now fails.
-  Replacing the whole helper-service with `npx secp256k1-db --port <port>`
-  removes the problem rather than fixing it.
+- [ ] **Move the consumers over.** `synqable`'s adapter (`sync/adapters/secp256k1-db`) speaks the old JSON-RPC protocol and needs a waxdb sibling. Its `Secp256k1Signer` interface stays as-is, since waxdb kept `signMessage(string)`.
+
+- [ ] **Compression in the consumer.** `jolly-roger`'s serializer is plain `JSON.stringify`; `stratagems` compresses before encrypting. The new consumer should do the same, and it matters more than any server-side limit (DECISIONS.md #13).

@@ -3,7 +3,7 @@ import {serve} from '@hono/node-server';
 import {Command} from 'commander';
 import fs from 'node:fs';
 import path from 'node:path';
-import {createServer, type Env} from 'secp256k1-db-server';
+import {createServer, type Env} from 'waxdb-server';
 import {createStorage} from './storage.js';
 
 const __dirname = import.meta.dirname;
@@ -19,11 +19,11 @@ async function main() {
 	const program = new Command();
 
 	program
-		.name('secp256k1-db')
+		.name('waxdb')
 		.version(pkg.version)
 		.usage(`[--port 2000] [--db ./data.json]`)
 		.description(
-			'run secp256k1-db locally: an authenticated key-value store for ethereum addresses',
+			'run waxdb locally: an authenticated key-value store for ethereum addresses',
 		)
 		.option('-p, --port <port>', 'port to listen on', '2000')
 		.option(
@@ -32,12 +32,8 @@ async function main() {
 			':memory:',
 		)
 		.option(
-			'-t, --token-admin <token>',
-			'enable the reset method for requests carrying this TOKEN header',
-		)
-		.option(
 			'-c, --clear',
-			'empty the store before starting (deletes every record, not just one like the reset method)',
+			'empty the store before starting (every record, not one)',
 		);
 
 	program.parse(process.argv);
@@ -45,7 +41,6 @@ async function main() {
 	const options: {
 		port: string;
 		db: string;
-		tokenAdmin?: string;
 		clear?: boolean;
 	} = program.opts();
 	const port = parseInt(options.port);
@@ -53,7 +48,6 @@ async function main() {
 	const env: NodeJSEnv = {
 		...process.env,
 		DB: options.db,
-		TOKEN_ADMIN: options.tokenAdmin ?? process.env.TOKEN_ADMIN,
 	};
 
 	const storage = createStorage(options.db);
@@ -71,7 +65,7 @@ async function main() {
 	serve({fetch: app.fetch, port});
 
 	console.log(
-		`secp256k1-db listening on http://localhost:${port} (store: ${options.db})`,
+		`waxdb listening on http://localhost:${port} (store: ${options.db})`,
 	);
 }
 

@@ -1,14 +1,14 @@
 {
-  "name": "secp256k1-db",
+  "name": "waxdb",
   "version": "0.1.0",
-  "description": "run secp256k1-db locally, offline: an authenticated key-value store for ethereum addresses",
+  "description": "run waxdb locally, offline: an authenticated key-value store for ethereum addresses",
   "license": "AGPL-3.0-only",
   "publishConfig": {
     "access": "public"
   },
   "type": "module",
   "bin": {
-    "secp256k1-db": "./dist/cli.js"
+    "waxdb": "./dist/cli.js"
   },
   "files": [
     "dist",
@@ -18,7 +18,7 @@
     "@hono/node-server": "^1.13.8",
     "commander": "^13.1.0",
     "polystore": "^0.27.0",
-    "secp256k1-db-server": "workspace:*"
+    "waxdb-server": "workspace:*"
   },
   "devDependencies": {
     "@ethersproject/wallet": "^5.0.0",

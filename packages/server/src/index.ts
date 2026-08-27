@@ -1,25 +1,37 @@
 import {Hono} from 'hono';
 import {Env} from './env.js';
+import {setup} from './setup.js';
 import {ServerOptions} from './types.js';
-import {getJSONRPCAPI} from './api/jsonrpc.js';
 
 export type {Env};
 export type {Storage} from './storage.js';
 export type {ServerOptions};
-export type {StoredRecord} from './record.js';
-export {storageKey, serialiseRecord, deserialiseRecord} from './record.js';
 
 /**
- * The whole service is one JSON-RPC endpoint answering on every path and every
- * method, so there is no routing to speak of and, deliberately, no cors
- * middleware: the handler emits the exact header set live clients already get.
+ * The waxdb service.
+ *
+ * The protocol is specified in SPEC.md and is not implemented yet. This builds
+ * the app and wires the storage seam; every route answers `not_implemented` in
+ * the error shape SPEC.md defines, so the envelope is already the real one when
+ * the handler lands.
  */
 export function createServer<CustomEnv extends Env>(
 	options: ServerOptions<CustomEnv>,
 ) {
 	const app = new Hono<{Bindings: CustomEnv}>();
 
-	return app.route('/', getJSONRPCAPI(options));
+	return app.use(setup({serverOptions: options})).all('*', (c) =>
+		c.json(
+			{
+				ok: false,
+				error: {
+					code: 'not_implemented',
+					message: 'waxdb is not implemented yet, see SPEC.md',
+				},
+			},
+			501,
+		),
+	);
 }
 
 export type App = ReturnType<typeof createServer>;
