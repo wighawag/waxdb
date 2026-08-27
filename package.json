@@ -4,12 +4,6 @@
   "private": true,
   "license": "AGPL-3.0-only",
   "type": "module",
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "workerd"
-    ]
-  },
   "scripts": {
     "build": "pnpm -r run build",
     "test": "pnpm run build && pnpm -r run test",

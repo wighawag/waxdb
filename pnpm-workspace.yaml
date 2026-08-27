@@ -1,3 +1,11 @@
 packages:
   - 'packages/*'
   - 'platforms/*'
+# Moved here from the root package.json's `pnpm.onlyBuiltDependencies`, which
+# pnpm 11 no longer reads. Same intent as before: only the two build tools this
+# repo actually needs may run install scripts.
+allowBuilds:
+  esbuild: true
+  workerd: true
+  '@parcel/watcher': false
+  sharp: false
