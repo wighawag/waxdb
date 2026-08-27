@@ -249,6 +249,24 @@ The fix is to ask for the value and discard it: `getWithMetadata(key, {type: "st
 
 The contract now also lets a harness declare itself eventually consistent, in which case seeding a record waits until the server can observe it. That is not a workaround: it removes the ambiguity between "the server failed to enforce a rule" and "the server had not seen the record yet", which are very different bugs that look identical from outside.
 
+## 20. The client is MIT, the service is AGPL
+
+**Why.** The two halves have opposite jobs. The service is something an operator runs, and the AGPL is what keeps a hosted fork's improvements available. The client is something an application embeds, and a copyleft client is one nobody can adopt: a permissive licence there costs nothing this project wanted and removes the only reason to reimplement the protocol rather than use it.
+
+So `packages/client` is MIT, with its own `LICENSE` in its own published files, and everything else stays `AGPL-3.0-only`.
+
+This also fixed a contradiction that had been sitting in the repository since the fork. The root `LICENSE` file was still the predecessor's **MIT** text while every `package.json` declared `AGPL-3.0-only`, so the two disagreed about the whole project and the file, being what people actually read, was winning. The root licence is now the verbatim FSF AGPL-3.0 text.
+
+**The consequence that shapes the code.** An MIT package cannot import AGPL code, so the client cannot reuse the server's implementation of the wire format. `packages/client/src/protocol.ts` is a second, independent implementation of the messages and the field rules.
+
+That sounds like a cost and is mostly a benefit, because it is the arrangement the vectors were built for. If both sides constructed messages with the same function, an error in it would cancel out on both sides and every test would pass while nothing interoperated. Two implementations held to `vectors.json` cannot drift silently: one of them fails the vectors. The duplication that the licence forces is the duplication correctness wanted.
+
+**Costs.** Two copies of the field rules to keep in step, which is real, and mitigated by the rules being small, frozen, and pinned by shared vectors. A licence boundary that a single plausible-looking import could erase, which is why `test/licensing.test.ts` fails the build if anything under `src/` imports the server, rather than trusting review to notice.
+
+The client also has **no runtime dependencies at all**, which is deliberate: a permissive licence is only useful if the dependency tree underneath it is too, and the wire format is small enough to own outright.
+
+`vectors.json` is data rather than code, and it exists to be consumed by client implementations this project will never see, so it should be usable regardless of the licence of whatever reads it.
+
 ## The frozen predecessor
 
 `etherplay/secp256k1-db`, archived. Its deployment is still running and still serving apps that cannot be rebuilt.

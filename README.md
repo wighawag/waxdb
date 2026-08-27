@@ -22,6 +22,7 @@ Not deployed: `platforms/cf-worker/wrangler.toml` still carries placeholder KV i
 ```
 packages/
   server/            the service, no platform APIs, storage behind an interface
+  client/            the client library. MIT, and independent of the server
 platforms/
   cf-worker/         Cloudflare Workers: Storage -> KV
   nodejs/            CLI: Storage -> a local store
@@ -58,6 +59,22 @@ cd bench && npm install && ./run.sh      # re-measure the hash decision
 
 waxdb replaces [etherplay/secp256k1-db](https://github.com/etherplay/secp256k1-db), which is archived, still deployed, and still serving apps that cannot be rebuilt. waxdb shares no code path, no deployment and no storage with it, and neither can read the other's records. The reasoning is DECISIONS.md #1, and the operational rules for the frozen service are at the end of that file.
 
+## Using it from an app
+
+```bash
+npm i waxdb-client
+```
+
+```ts
+const client = new WaxdbClient({endpoint, namespace: 'my.app', signer: wallet});
+await client.put(bytes);
+const read = await client.get();
+```
+
+See [packages/client](packages/client/README.md). It carries its own implementation of the wire format rather than importing the server's, and `vectors.json` is what holds the two to the same answer.
+
 ## License
 
-See the [LICENSE](LICENSE) file for details.
+**[AGPL-3.0-only](LICENSE)**, except the client.
+
+**[packages/client](packages/client/LICENSE) is MIT**, because a client library that cannot be embedded freely is not much of a client library. The service is something you run, where the AGPL keeps a hosted fork's improvements available; the client is something you embed, where copyleft would just stop people adopting it. DECISIONS.md #20.

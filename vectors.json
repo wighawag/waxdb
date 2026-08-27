@@ -1,5 +1,6 @@
 {
-	"$comment": "Cross-implementation vectors for the waxdb signed message. See SPEC.md, \"Cross-implementation vectors\". Regenerate with `pnpm --filter waxdb-server run vectors`. A change to the encoding that does not update this file in the same commit surfaces only as signature_mismatch in production.",
+	"$comment": "Cross-implementation vectors for the waxdb signed message. See SPEC.md, \"Cross-implementation vectors\". Regenerate with `pnpm --filter waxdb-server run vectors`. A change to the encoding that does not update this file in the same commit surfaces only as signature_mismatch in production. This file is data rather than code and is published under the MIT licence (see packages/client/LICENSE), so any client implementation may use it regardless of its own licence.",
+	"license": "MIT",
 	"privateKey": "0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318",
 	"signer": "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23",
 	"hashes": {

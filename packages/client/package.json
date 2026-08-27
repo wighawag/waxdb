@@ -1,0 +1,41 @@
+{
+	"name": "waxdb-client",
+	"version": "0.0.1",
+	"description": "MIT client for waxdb: an authenticated key-value store for ethereum addresses",
+	"license": "MIT",
+	"publishConfig": {
+		"access": "public"
+	},
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/esm/index.d.ts",
+			"default": "./dist/esm/index.js"
+		},
+		"./package.json": "./package.json"
+	},
+	"files": [
+		"dist",
+		"src",
+		"LICENSE"
+	],
+	"sideEffects": false,
+	"devDependencies": {
+		"@ethersproject/wallet": "^5.8.0",
+		"@types/node": "^22.13.10",
+		"as-soon": "^0.0.11",
+		"prettier": "^3.4.2",
+		"typescript": "^5.6.3",
+		"vitest": "^4.0.0",
+		"waxdb-server": "workspace:*"
+	},
+	"scripts": {
+		"build": "tsc --project tsconfig.json",
+		"dev": "as-soon -w src pnpm build",
+		"pretest": "pnpm build",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"format": "prettier --write .",
+		"format:check": "prettier --check ."
+	}
+}
