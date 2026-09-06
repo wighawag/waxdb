@@ -1,3 +1,7 @@
+<div align="center">
+<a href="https://github.com/wighawag/waxdb"><img alt="waxdb" src="https://raw.githubusercontent.com/wighawag/waxdb/main/media/preview.png" width="640" /></a>
+</div>
+
 # waxdb
 
 An authenticated key-value store for ethereum addresses. Only the holder of the key can write a record, and unless the deployment opens reads up, only that same holder can read it.
